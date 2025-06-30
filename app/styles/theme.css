@@ -1,0 +1,18 @@
+/* /styles/theme.css */
+:root {
+    --color-bg: #fffaf3;
+    --color-text: #1c1c1c;
+    --color-primary: #ff8c42;
+    --color-accent: #f85f36;
+    --color-border: #e0cbbf;
+    --radius: 1rem;
+    --font-base: 'Plus Jakarta Sans', sans-serif;
+}
+
+body {
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-base);
+    font-size: 16px;
+    line-height: 1.6;
+}
