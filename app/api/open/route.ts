@@ -1,33 +1,45 @@
-import { createClient } from "@supabase/supabase-js";
-import { NextRequest, NextResponse } from "next/server";
+// /app/api/open/route.ts
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET(req: NextRequest) {
-    const id = req.nextUrl.searchParams.get("id");
+// Un mini GIF noir 1x1, encodé en base64
+const gifBuffer = Buffer.from(
+  'R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==',
+  'base64'
+);
 
-    if (!id) {
-        return new NextResponse("Missing ID", { status: 400 });
-    }
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get('id');
 
-    await supabase
-        .from("emails_sent")
-        .update({ opened: true })
-        .eq("id", id);
+  if (!id) {
+    console.warn('📭 Pixel appelé sans ID');
+    return new NextResponse('Missing ID', { status: 400 });
+  }
 
-    // Pixel transparent 1x1
-    const pixelBuffer = Buffer.from(
-        "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
-        "base64"
-    );
+  const { error } = await supabase
+    .from('emails_sent')
+    .update({ opened_at: new Date().toISOString() })
+    .eq('id', id);
 
-    return new NextResponse(pixelBuffer, {
-        headers: {
-            "Content-Type": "image/gif",
-            "Cache-Control": "no-cache, no-store, must-revalidate",
-        },
-    });
+  if (error) {
+    console.error('❌ Erreur enregistrement ouverture :', error.message);
+    return new NextResponse('Erreur', { status: 500 });
+  }
+
+  console.log(`👁️ Pixel de suivi vu pour email ID ${id}`);
+
+  return new NextResponse(gifBuffer, {
+    status: 200,
+    headers: {
+      'Content-Type': 'image/gif',
+      'Content-Length': gifBuffer.length.toString(),
+      'Cache-Control': 'no-store',
+    },
+  });
 }

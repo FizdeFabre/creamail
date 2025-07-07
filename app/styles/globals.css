@@ -4,21 +4,47 @@
 
 :root {
   --color-primary: #9b5de5;
-  /* violet améthyste */
   --color-secondary: #c77dff;
-  /* lavande enchantée */
   --color-accent: #5f0f40;
-  /* prune mystique */
-  --color-background: #f5ecff;
-  /* parchemin magique */
-  /* lilas doux */
-  --color-text: #2e2e2e;
+
   --color-error: #e63946;
   --color-error-dialog: #d94f4f;
+
+  --color-background: #f5ecff;
+  --color-surface: #ffffff;
+  --color-text: #2e2e2e;
+  --color-muted: #888;
+
   --radius: 16px;
   --shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   --shadow-hover: 0 6px 14px rgba(0, 0, 0, 0.1);
   --transition-fast: 0.2s ease-in-out;
+}
+
+.dark {
+  --color-background: #1e1b1c;
+  /* Fond très sombre, tirant sur prune brunie */
+  --color-surface: #2a242f;
+  /* Pour les cartes/panneaux : un prune/gris doux */
+  --color-text: #e6e0e9;
+  /* Texte clair, blanc cassé légèrement rosé */
+  --color-muted: #b4aebc;
+  /* Texte secondaire lavande grisée */
+
+  --color-primary: #c084fc;
+  /* Violet lumineux (clair et magique) */
+  --color-secondary: #ddb6f2;
+  /* Lavande claire – doux au regard */
+  --color-accent: #5f0f40;
+  /* Inchangé : prune sombre passionné */
+
+  --color-error: #ff6b6b;
+  /* Rouge doux, pas trop criard */
+  --color-error-dialog: #ff8787;
+  /* Variante pour les modales */
+
+  --color-shadow: rgba(0, 0, 0, 0.3);
+  /* Ombres plus profondes */
 }
 
 *,
@@ -132,7 +158,8 @@ button:disabled {
 
 /* Carte séquence */
 .card {
-  background: #fff;
+  background: var(--color-surface);
+  color: var(--color-text);
   border-radius: var(--radius);
   padding: 1.5rem;
   box-shadow: var(--shadow);
@@ -142,7 +169,8 @@ button:disabled {
   user-select: none;
   border: 1px solid var(--color-secondary);
   /* 🌟 ajout */
-  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  transition: border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
   border-radius: 15px;
 
   p.inset {
@@ -173,6 +201,15 @@ button:disabled {
   color: #444;
   font-size: 0.95rem;
   user-select: text;
+  max-height: 6rem;
+  /* ou ce que tu veux */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  /* nombre de lignes */
+  -webkit-box-orient: vertical;
 }
 
 .meta {

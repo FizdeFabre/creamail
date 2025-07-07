@@ -2,8 +2,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { CreateSequenceDialog } from "@/app/dashboard/create/page";
-import "@/app/styles/globals.css"; // Attention à bien l'importer
+import { CreateSequenceDialog } from "@/app/components/CreateSequenceDialog";
+import "@/app/styles/globals.css";
 
 interface Sequence {
   id: string;
@@ -19,7 +19,9 @@ interface Sequence {
 export default function Dashboard() {
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showDialog, setShowDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editData, setEditData] = useState<Sequence | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const router = useRouter();
 
@@ -73,31 +75,55 @@ export default function Dashboard() {
     if (userId) loadSequences(userId);
   };
 
+  const handleEdit = (sequence: Sequence) => {
+    setEditData(sequence);
+    setShowEditDialog(true);
+  };
+
   return (
     <div className="dashboard-container">
-      <h1 className="section-title">📬 Mon Dashboard Email</h1>
+      <h1 className="section-title"> (Beta)</h1>
 
       <div className="action-bar">
-        <button onClick={() => setShowDialog(true)} className="btn">
+        <button onClick={() => setShowCreateDialog(true)} className="btn-secondary">
           🍑 Créer une séquence
         </button>
         <button onClick={() => router.push("/dashboard/datacenter")} className="btn-secondary">
           📈 Voir les Stats
         </button>
-        <button onClick={() => router.push("/dashboard/email_summary")} className="btn-alt">
-          🧠 Résumé IA
+        <button onClick={() => router.push("/dashboard/settings")} className="btn-secondary">
+          Calendrier ( Bientot )
+        </button>
+        <button onClick={() => router.push("/dashboard/settings")} className="btn-secondary">
+          Paramètres
         </button>
       </div>
 
-      {showDialog && userId && (
+      {/* 🆕 Modale Création */}
+      {showCreateDialog && userId && (
         <CreateSequenceDialog
-          open={showDialog}
-          onClose={() => setShowDialog(false)}
+          open={showCreateDialog}
+          onClose={() => setShowCreateDialog(false)}
           onCreated={() => userId && loadSequences(userId)}
           userId={userId}
         />
       )}
 
+      {/* ✏️ Modale Édition */}
+      {showEditDialog && userId && (
+        <CreateSequenceDialog
+          open={showEditDialog}
+          onClose={() => {
+            setShowEditDialog(false);
+            setEditData(null);
+          }}
+          onCreated={() => userId && loadSequences(userId)}
+          userId={userId}
+          initialData={editData ?? undefined}
+        />
+      )}
+
+      {/* 🌀 Contenu */}
       {loading ? (
         <p className="status-text">⏳ Chargement...</p>
       ) : sequences.length === 0 ? (
@@ -119,7 +145,7 @@ export default function Dashboard() {
                 </p>
               </div>
               <div className="actions">
-                <button onClick={() => router.push(`/edit/${seq.id}`)}>✏️ Modifier</button>
+                <button onClick={() => handleEdit(seq)}>✏️ Modifier</button>
                 <button onClick={() => handleDuplicate(seq.id)}>📄 Dupliquer</button>
                 <button onClick={() => handleDelete(seq.id)}>🗑 Supprimer</button>
               </div>
