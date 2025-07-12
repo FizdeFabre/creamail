@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { CreateSequenceDialog } from "@/app/components/CreateSequenceDialog";
+import EditSequenceDialog from "@/app/components/EditSequenceDialog";
 import "@/app/styles/globals.css";
 
 interface Sequence {
@@ -110,16 +111,15 @@ export default function Dashboard() {
       )}
 
       {/* ✏️ Modale Édition */}
-      {showEditDialog && userId && (
-        <CreateSequenceDialog
+      {showEditDialog && editData && (
+        <EditSequenceDialog
           open={showEditDialog}
           onClose={() => {
             setShowEditDialog(false);
             setEditData(null);
           }}
-          onCreated={() => userId && loadSequences(userId)}
-          userId={userId}
-          initialData={editData ?? undefined}
+          onUpdated={() => userId && loadSequences(userId)}
+          sequenceId={editData.id}
         />
       )}
 
