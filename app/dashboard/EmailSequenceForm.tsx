@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { CreateSequenceDialog } from "@/app/components/EmailSequenceForm";
+import { CreateSequenceDialog } from "@/app/components/CreateSequenceDialog";
 
 export default function Page() {
     const [open, setOpen] = useState(true);
