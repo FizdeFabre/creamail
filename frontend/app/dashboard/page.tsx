@@ -8,7 +8,8 @@ import { MultiEmailDisplay } from "@/app/components/MultiEmailDisplay";
 import useSubscription from "@/app/lib/useSubscription";
 import { formatUtcToLocal } from "@/app/lib/dateUtils";
 import { ensureUtcISOString } from "@/app/lib/dateTypeShit";
-
+import { parse, formatISO } from "date-fns";
+import { fr } from "date-fns/locale";
 
 interface Sequence {
   id: string;
@@ -237,10 +238,10 @@ export default function Dashboard() {
           Settings
         </button>
         <button
-          onClick={() => router.push("/dashboard/bailing")}
+          onClick={() => router.push("/dashboard/billing")}
           className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow"
         >
-          Bailing
+          Billing
         </button>
       </div>
 
