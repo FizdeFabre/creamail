@@ -23,7 +23,7 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 🎯 Un seul useEffect pour setup & fetch
+  // 🎯 Setup & fetch des destinataires
   useEffect(() => {
     if (!sequence?.id || !open) return;
 
@@ -32,68 +32,70 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
     setRecurrence(sequence.recurrence || "daily");
     setScheduledAt(sequence.scheduled_at ? sequence.scheduled_at.slice(0, 16) : "");
 
-const fetchRecipients = async () => {
-  const { data, error } = await supabase
-    .from("sequence_recipients")
-    .select("to_email")
-    .eq("sequence_id", sequence.id);
+    const fetchRecipients = async () => {
+      const { data, error } = await supabase
+        .from("sequence_recipients")
+        .select("to_email")
+        .eq("sequence_id", sequence.id);
 
-  if (error) {
-    console.error("Erreur chargement destinataires :", error.message);
-    return;
-  }
+      if (error) {
+        console.error("Erreur chargement destinataires :", error.message);
+        return;
+      }
 
-  // ⚡️ Dedup direct ici
-  const emails = Array.from(
-    new Set((data ?? []).map((d) => d.to_email.toLowerCase().trim()))
-  );
-
-  // On réinjecte dans le textarea sous forme propre (séparées par virgule)
-  setToEmail(emails.join(", "));
-};
+      const emails = Array.from(
+        new Set((data ?? []).map(d => d.to_email.toLowerCase().trim()))
+      );
+      setToEmail(emails.join(", "));
+    };
 
     fetchRecipients();
   }, [sequence, open]);
 
-  // ✨ Emails bien parsés
- const parsedEmails = Array.from(
-  new Set(
-    toEmail
-      .split(/[\s,;\n]+/)
-      .map((e) => e.trim().toLowerCase())
-      .filter((e) => e !== "" && isValidEmail(e))
-  )
-);
+  // ✨ Emails bien parsés et dédupliqués
+  const parsedEmails = Array.from(
+    new Set(
+      toEmail
+        .split(/[\s,;\n]+/)
+        .map(e => e.trim().toLowerCase())
+        .filter(e => e !== "" && isValidEmail(e))
+    )
+  );
 
+  // 🔥 Handle update avec overwrite et upsert
   const handleUpdate = async () => {
     setLoading(true);
     setError("");
 
     try {
-      // Update de la séquence
+      // 1️⃣ Mise à jour de la séquence
       await supabase
         .from("email_sequences")
         .update({
           subject,
           body,
           recurrence,
-          scheduled_at: new Date(scheduledAt).toISOString(), // 🕑 ISO clean
+          scheduled_at: new Date(scheduledAt).toISOString(),
         })
         .eq("id", sequence.id);
 
-      // Supprimer les anciens destinataires
-      await supabase.from("sequence_recipients").delete().eq("sequence_id", sequence.id);
+      // 2️⃣ Supprimer anciens destinataires
+      await supabase
+        .from("sequence_recipients")
+        .delete()
+        .eq("sequence_id", sequence.id);
 
-      // Réinsérer les nouveaux
-      if (parsedEmails.length > 0) {
-        await supabase.from("sequence_recipients").insert(
-          parsedEmails.map((email) => ({
-            sequence_id: sequence.id,
-            to_email: email,
-          }))
-        );
-      }
+      // 3️⃣ Upsert des nouveaux destinataires
+   if (parsedEmails.length > 0) {
+  await supabase.from("sequence_recipients").insert(
+    parsedEmails.map(email => ({
+      sequence_id: sequence.id,
+      to_email: email,
+    }))
+  );
+}
 
+      // 4️⃣ Notifie & ferme
       onUpdated();
       onClose();
     } catch (err: any) {
