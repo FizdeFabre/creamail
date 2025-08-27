@@ -62,7 +62,7 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
     )
   );
 
-  // 🔥 Handle update avec overwrite et upsert
+  // 🔥 Handle update avec overwrite
   const handleUpdate = async () => {
     setLoading(true);
     setError("");
@@ -80,20 +80,24 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
         .eq("id", sequence.id);
 
       // 2️⃣ Supprimer anciens destinataires
-      await supabase
+      const { error: deleteError } = await supabase
         .from("sequence_recipients")
         .delete()
         .eq("sequence_id", sequence.id);
 
-      // 3️⃣ Upsert des nouveaux destinataires
-   if (parsedEmails.length > 0) {
-  await supabase.from("sequence_recipients").insert(
-    parsedEmails.map(email => ({
-      sequence_id: sequence.id,
-      to_email: email,
-    }))
-  );
-}
+      if (deleteError) throw deleteError;
+
+      // 3️⃣ Insert des nouveaux destinataires si présents
+      if (parsedEmails.length > 0) {
+        const { error: insertError } = await supabase
+          .from("sequence_recipients")
+          .insert(parsedEmails.map(email => ({
+            sequence_id: sequence.id,
+            to_email: email
+          })));
+
+        if (insertError) throw insertError;
+      }
 
       // 4️⃣ Notifie & ferme
       onUpdated();
@@ -115,7 +119,6 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
         </h2>
 
         <div className="space-y-3">
-          {/* Emails */}
           <textarea
             className="w-full p-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Emails (separated by space, comma or newline)"
@@ -139,15 +142,12 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
             )}
           </div>
 
-          {/* Subject */}
           <input
             className="w-full p-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             placeholder="Subject"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
           />
-
-          {/* Body */}
           <textarea
             className="w-full p-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             rows={4}
@@ -155,8 +155,6 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
-
-          {/* Recurrence */}
           <select
             className="w-full p-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={recurrence}
@@ -168,15 +166,12 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
             <option value="yearly">Every year</option>
             <option value="once">Once</option>
           </select>
-
-          {/* Date */}
           <input
             type="datetime-local"
             className="w-full p-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
           />
-
           {error && <p className="text-red-500 text-sm">⚠️ {error}</p>}
         </div>
 
