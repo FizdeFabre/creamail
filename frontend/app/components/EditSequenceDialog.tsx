@@ -32,29 +32,38 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
     setRecurrence(sequence.recurrence || "daily");
     setScheduledAt(sequence.scheduled_at ? sequence.scheduled_at.slice(0, 16) : "");
 
-    const fetchRecipients = async () => {
-      const { data, error } = await supabase
-        .from("sequence_recipients")
-        .select("to_email")
-        .eq("sequence_id", sequence.id);
+const fetchRecipients = async () => {
+  const { data, error } = await supabase
+    .from("sequence_recipients")
+    .select("to_email")
+    .eq("sequence_id", sequence.id);
 
-      if (error) {
-        console.error("Erreur chargement destinataires :", error.message);
-        return;
-      }
+  if (error) {
+    console.error("Erreur chargement destinataires :", error.message);
+    return;
+  }
 
-      const emails = (data ?? []).map((d) => d.to_email).join(", ");
-      setToEmail(emails);
-    };
+  // ⚡️ Dedup direct ici
+  const emails = Array.from(
+    new Set((data ?? []).map((d) => d.to_email.toLowerCase().trim()))
+  );
+
+  // On réinjecte dans le textarea sous forme propre (séparées par virgule)
+  setToEmail(emails.join(", "));
+};
 
     fetchRecipients();
   }, [sequence, open]);
 
   // ✨ Emails bien parsés
-  const parsedEmails = toEmail
-    .split(/[\s,;\n]+/)
-    .map((e) => e.trim())
-    .filter((e) => e !== "" && isValidEmail(e));
+ const parsedEmails = Array.from(
+  new Set(
+    toEmail
+      .split(/[\s,;\n]+/)
+      .map((e) => e.trim().toLowerCase())
+      .filter((e) => e !== "" && isValidEmail(e))
+  )
+);
 
   const handleUpdate = async () => {
     setLoading(true);
