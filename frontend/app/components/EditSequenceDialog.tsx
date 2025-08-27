@@ -71,75 +71,50 @@
             .map((e) => e.trim())
             .filter((e) => e !== "");
 
-        const handleUpdate = async () => {
-            if (!sequence) return;
+const handleUpdate = async () => {
+  setLoading(true);
+  setError("");
 
-            setLoading(true);
-            setError("");
+  try {
+    // Construire les données mises à jour
+    const updatedData = {
+      subject,
+      body,
+      recurrence,
+      scheduled_at: scheduledAt,
+    };
 
-            const scheduledTimestamp = scheduledAt
-                ? new Date(scheduledAt).toISOString()
-                : null;
+    // Update de la séquence
+    await supabase
+      .from("email_sequences")
+      .update(updatedData)
+      .eq("id", sequence.id);
 
-            const updated = await supabase
-                .from("email_sequences")
-                .update({
-                    subject,
-                    body,
-                    recurrence,
-                    scheduled_at: scheduledTimestamp,
-                })
-                .eq("id", sequence.id);
+    // Supprimer les anciens destinataires
+    await supabase
+      .from("sequence_recipients")
+      .delete()
+      .eq("sequence_id", sequence.id);
 
-            if (updated.error) {
-                setError("Erreur mise à jour séquence : " + updated.error.message);
-                setLoading(false);
-                return;
-            }
+    // Réinsérer les nouveaux
+    if (parsedEmails.length > 0) {
+      await supabase.from("sequence_recipients").insert(
+        parsedEmails.map((email) => ({
+          sequence_id: sequence.id,
+          to_email: email,
+        }))
+      );
+    }
 
-            // Nettoyer les anciens destinataires
-            await supabase
-                .from("sequence_recipients")
-                .delete()
-                .eq("sequence_id", sequence.id);
-
-            const emails = toEmail
-                .split(/[\s,;]+/)
-                .map((e) => e.trim())
-                .filter((e) => e !== "");
-
-            const isValidEmail = (email: string) =>
-                /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-
-            if (emails.length === 0 || !emails.every(isValidEmail)) {
-                setError("Un ou plusieurs emails sont invalides.");
-                setLoading(false);
-                return;
-            }
-
-            const inserts = emails.map((email) => ({
-                sequence_id: sequence.id,
-                to_email: email,
-            }));
-
-            const insertRecipients = await supabase
-                .from("sequence_recipients")
-                .insert(inserts);
-
-            if (insertRecipients.error) {
-                setError(
-                    "Erreur lors de la mise à jour des destinataires : " +
-                    insertRecipients.error.message
-                );
-                setLoading(false);
-                return;
-            }
-
-            onUpdated?.();
-            onClose();
-            setLoading(false);
-        };
-
+    // Notifie le parent qu'on a mis à jour
+    onUpdated();
+    onClose();
+  } catch (err: any) {
+    setError(err.message || "Erreur lors de la mise à jour");
+  } finally {
+    setLoading(false);
+  }
+};
         if (!open) return null;
 
         return (
@@ -214,13 +189,13 @@
                         >
                             Cancel
                         </button>
-                        <button
-                            onClick={handleUpdate}
-                            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
-                            disabled={loading}
-                        >
-                            {loading ? "Updating ... " : "Saving"}
-                        </button>
+                       <button
+  onClick={handleUpdate}
+  className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
+  disabled={loading}
+>
+  {loading ? "Updating..." : "Saving"}
+</button>
                     </div>
                 </div>
             </div>
