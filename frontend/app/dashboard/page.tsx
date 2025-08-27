@@ -285,6 +285,7 @@ export default function Dashboard() {
       )}
 
       {selectedSequence && (
+        // ##### C'EST QUOI CE BOUTON DE SALOPARD ?!!! ######
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-xl w-full max-w-xl relative max-h-[90vh] overflow-y-auto">
             <button
@@ -294,7 +295,7 @@ export default function Dashboard() {
             >
               Back to the Dashboard
             </button>
-
+        
             <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
               {selectedSequence.subject}
             </h2>
