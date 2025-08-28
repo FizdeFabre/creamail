@@ -62,7 +62,7 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
     )
   );
 
-  // 🔥 Handle update avec overwrite
+  // 🔥 Handle update avec overwrite + upsert
   const handleUpdate = async () => {
     setLoading(true);
     setError("");
@@ -87,16 +87,23 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
 
       if (deleteError) throw deleteError;
 
-      // 3️⃣ Insert des nouveaux destinataires si présents
+      // 3️⃣ Upsert des nouveaux destinataires
       if (parsedEmails.length > 0) {
-        const { error: insertError } = await supabase
-          .from("sequence_recipients")
-          .insert(parsedEmails.map(email => ({
-            sequence_id: sequence.id,
-            to_email: email
-          })));
+        const normalized = Array.from(
+          new Set(parsedEmails.map(email => email.trim().toLowerCase()))
+        );
 
-        if (insertError) throw insertError;
+        const { error: upsertError } = await supabase
+          .from("sequence_recipients")
+          .upsert(
+            normalized.map(email => ({
+              sequence_id: sequence.id,
+              to_email: email,
+            })),
+            { onConflict: "sequence_id,to_email" }
+          );
+
+        if (upsertError) throw upsertError;
       }
 
       // 4️⃣ Notifie & ferme
