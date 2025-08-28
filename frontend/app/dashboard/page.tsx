@@ -355,7 +355,9 @@ scheduled_at: toPostgresTimestamp(sequence.scheduled_at ?? new Date().toISOStrin
                   <p>
                     <strong>Scheduled for:</strong>{" "}
                     <span className="font-mono">
-                      {formatUtcToLocal(seq.scheduled_at)}
+                     {seq.scheduled_at 
+  ? formatUtcToLocal(seq.scheduled_at) 
+  : "Not scheduled"}
                     </span>
                   </p>
                 </div>
