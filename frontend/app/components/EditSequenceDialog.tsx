@@ -14,7 +14,12 @@ interface Props {
 const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props) {
+export function EditSequenceDialog({
+  open,
+  onClose,
+  onUpdated,
+  sequence,
+}: Props) {
   const [toEmail, setToEmail] = useState("");
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
@@ -23,14 +28,16 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 🎯 Setup & fetch des destinataires
+  // 🎯 Load data
   useEffect(() => {
     if (!sequence?.id || !open) return;
 
     setSubject(sequence.subject || "");
     setBody(sequence.body || "");
     setRecurrence(sequence.recurrence || "daily");
-    setScheduledAt(sequence.scheduled_at ? sequence.scheduled_at.slice(0, 16) : "");
+    setScheduledAt(
+      sequence.scheduled_at ? sequence.scheduled_at.slice(0, 16) : ""
+    );
 
     const fetchRecipients = async () => {
       const { data, error } = await supabase
@@ -44,7 +51,7 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
       }
 
       const emails = Array.from(
-        new Set((data ?? []).map(d => d.to_email.toLowerCase().trim()))
+        new Set((data ?? []).map((d) => d.to_email.toLowerCase().trim()))
       );
       setToEmail(emails.join(", "));
     };
@@ -52,23 +59,33 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
     fetchRecipients();
   }, [sequence, open]);
 
-  // ✨ Emails bien parsés et dédupliqués
+  // ✨ Clean parse
   const parsedEmails = Array.from(
     new Set(
       toEmail
         .split(/[\s,;\n]+/)
-        .map(e => e.trim().toLowerCase())
-        .filter(e => e !== "" && isValidEmail(e))
+        .map((e) => e.trim().toLowerCase())
+        .filter((e) => e !== "" && isValidEmail(e))
     )
   );
 
-  // 🔥 Handle update avec overwrite + upsert
+  // 🔥 Handle update
   const handleUpdate = async () => {
     setLoading(true);
     setError("");
 
     try {
-      // 1️⃣ Mise à jour de la séquence
+      // 0️⃣ Récup user actuel
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError || !user) {
+        throw new Error("Impossible de récupérer l'utilisateur connecté.");
+      }
+
+      // 1️⃣ Update de la séquence
       await supabase
         .from("email_sequences")
         .update({
@@ -79,7 +96,7 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
         })
         .eq("id", sequence.id);
 
-      // 2️⃣ Supprimer anciens destinataires
+      // 2️⃣ Delete anciens destinataires
       const { error: deleteError } = await supabase
         .from("sequence_recipients")
         .delete()
@@ -87,26 +104,26 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
 
       if (deleteError) throw deleteError;
 
-      // 3️⃣ Upsert des nouveaux destinataires
+      // 3️⃣ Insert nouveaux destinataires
       if (parsedEmails.length > 0) {
         const normalized = Array.from(
-          new Set(parsedEmails.map(email => email.trim().toLowerCase()))
+          new Set(parsedEmails.map((email) => email.trim().toLowerCase()))
         );
 
-        const { error: upsertError } = await supabase
+        const { error: insertError } = await supabase
           .from("sequence_recipients")
-          .upsert(
-            normalized.map(email => ({
+          .insert(
+            normalized.map((email) => ({
               sequence_id: sequence.id,
               to_email: email,
-            })),
-            { onConflict: "sequence_id,to_email" }
+              user_id: user.id, // 👈 CLÉ pour RLS
+            }))
           );
 
-        if (upsertError) throw upsertError;
+        if (insertError) throw insertError;
       }
 
-      // 4️⃣ Notifie & ferme
+      // 4️⃣ Notif & close
       onUpdated();
       onClose();
     } catch (err: any) {
@@ -144,7 +161,9 @@ export function EditSequenceDialog({ open, onClose, onUpdated, sequence }: Props
             ))}
             {parsedEmails.length > 4 && (
               <span className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-xs font-medium px-2 py-1 rounded">
-                … And {parsedEmails.length > 99 ? "99+" : parsedEmails.length - 4} Others
+                … And{" "}
+                {parsedEmails.length > 99 ? "99+" : parsedEmails.length - 4}{" "}
+                Others
               </span>
             )}
           </div>
