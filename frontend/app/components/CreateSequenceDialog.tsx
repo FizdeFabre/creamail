@@ -1,4 +1,4 @@
-
+// CreateSequenceDialog.tsx
 "use client";
 
 import { useState } from "react";
@@ -74,7 +74,7 @@ export function CreateSequenceDialog({
             setLoading(false);
             return;
         }
-        const scheduledTimestamp = formatUtcToLocal(scheduledAt);
+const scheduledTimestamp = localDateTimeToUTCISOString(scheduledAt);
         if (!scheduledTimestamp) {
             setError("Invalid date");
             setLoading(false);

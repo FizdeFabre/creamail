@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import "@/app/styles/globals.css";
+import {toPostgresTimestamp } from "@/app/lib/dateUtils";
 
 interface Props {
   open: boolean;
@@ -82,7 +83,7 @@ export function EditSequenceDialog({
           subject,
           body,
           recurrence,
-          scheduled_at: new Date(scheduledAt).toISOString(),
+          scheduled_at: toPostgresTimestamp(scheduledAt),
         })
         .eq("id", sequence.id);
 
