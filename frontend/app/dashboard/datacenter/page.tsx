@@ -60,7 +60,7 @@ export default function DataCenterPage() {
     if (loading) {
         return (
             <div className="screen center loading">
-                <p>Chargement magique en cours... ✨</p>
+                <p>Loading ... </p>
             </div>
         );
     }
@@ -72,18 +72,18 @@ export default function DataCenterPage() {
             <div className="max-w-xl mx-auto py-20 text-center">
                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">🔒 Accès réservé</h1>
                 <p className="text-gray-600 dark:text-gray-400 mt-4">
-                    Cette fonctionnalité est réservée aux abonnés
+                   This feature is not available unless you have an 
 
                 </p>
                 <div></div>
                 <p className="text-2xl text-yellow-400 dark:text-yellow-400 mt-5 py-25 text-center">
-                    <strong>Ultimate</strong>.
+                    <strong>Ultimate subscription</strong>.
                 </p>
                 <a
-                    href="/dashboard/bailing"
+                    href="/dashboard/billing"
                     className="inline-block mt-6 bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow"
                 >
-                    Mettre à jour mon abonnement 💳
+                    Unlock the datacenter NOW !
                 </a>
             </div>
         );
