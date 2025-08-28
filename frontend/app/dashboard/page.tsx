@@ -246,7 +246,7 @@ const handleEdit = (sequence: Sequence) => {
           Settings
         </button>
         <button
-          onClick={() => router.push("/dashboard/billing")}
+          onClick={() => router.push("/dashboard/lockdown")}
           className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow"
         >
           Billing
