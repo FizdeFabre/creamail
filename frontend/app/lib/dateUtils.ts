@@ -2,31 +2,28 @@
 import { format, parseISO } from "date-fns";
 
 /**
- * ✅ Convert a datetime-local string or Date into proper Postgres UTC timestamp
- * Always returns ISO 8601 in UTC ("Z")
+ * ✅ Sauvegarde une heure locale "naïve" dans Postgres
+ * Exemple : "2025-08-28T10:00" → "2025-08-28T10:00:00"
+ * (⚠️ Pas de "Z", donc pas de décalage UTC)
  */
 export function toPostgresTimestamp(date: string | Date | null): string | null {
   if (!date) return null;
 
   if (typeof date === "string") {
-    // input: "2025-08-28T10:00" (local browser time, no TZ)
-    const [datePart, timePart] = date.split("T");
-    const [year, month, day] = datePart.split("-").map(Number);
-    const [hour, minute] = timePart.split(":").map(Number);
-
-    // ✅ Construire comme UTC directement
-    const utcDate = new Date(Date.UTC(year, month - 1, day, hour, minute));
-    return utcDate.toISOString(); // ex: "2025-08-28T10:00:00.000Z"
+    // Si c'est déjà au format datetime-local → on le stocke brut
+    return date.length === 16 ? `${date}:00` : date;
   }
 
-  return date.toISOString();
+  // Si jamais on reçoit un Date → on formate en local sans timezone
+  return format(date, "yyyy-MM-dd HH:mm:ss");
 }
 
 /**
- * ✅ Convert a UTC timestamp from Postgres into a local human-readable string
+ * ✅ Affiche une valeur stockée en local "naïf"
+ * (toujours identique à ce qui a été saisi, peu importe le fuseau)
  */
-export function formatUtcToLocal(utcString: string | null): string {
-  if (!utcString) return "";
-  const d = parseISO(utcString); // ← parse ISO "Z" correctly as UTC
-  return format(d, "yyyy-MM-dd HH:mm"); // ← rendered in YOUR local TZ
+export function formatUtcToLocal(naiveString: string | null): string {
+  if (!naiveString) return "";
+  const d = parseISO(naiveString);
+  return format(d, "yyyy-MM-dd HH:mm");
 }
