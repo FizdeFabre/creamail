@@ -28,7 +28,7 @@ export function EditSequenceDialog({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // 🎯 Load data
+  // Charger données
   useEffect(() => {
     if (!sequence?.id || !open) return;
 
@@ -59,7 +59,7 @@ export function EditSequenceDialog({
     fetchRecipients();
   }, [sequence, open]);
 
-  // ✨ Clean parse
+  // Nettoyer emails
   const parsedEmails = Array.from(
     new Set(
       toEmail
@@ -69,23 +69,13 @@ export function EditSequenceDialog({
     )
   );
 
-  // 🔥 Handle update
+  // Update séquence + destinataires
   const handleUpdate = async () => {
     setLoading(true);
     setError("");
 
     try {
-      // 0️⃣ Récup user actuel
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        throw new Error("Impossible de récupérer l'utilisateur connecté.");
-      }
-
-      // 1️⃣ Update de la séquence
+      // Update séquence
       await supabase
         .from("email_sequences")
         .update({
@@ -96,34 +86,26 @@ export function EditSequenceDialog({
         })
         .eq("id", sequence.id);
 
-      // 2️⃣ Delete anciens destinataires
-      const { error: deleteError } = await supabase
+      // Supprimer anciens destinataires
+      await supabase
         .from("sequence_recipients")
         .delete()
         .eq("sequence_id", sequence.id);
 
-      if (deleteError) throw deleteError;
-
-      // 3️⃣ Insert nouveaux destinataires
+      // Insérer nouveaux destinataires
       if (parsedEmails.length > 0) {
-        const normalized = Array.from(
-          new Set(parsedEmails.map((email) => email.trim().toLowerCase()))
-        );
-
         const { error: insertError } = await supabase
           .from("sequence_recipients")
           .insert(
-            normalized.map((email) => ({
+            parsedEmails.map((email) => ({
               sequence_id: sequence.id,
               to_email: email,
-              user_id: user.id, // 👈 CLÉ pour RLS
             }))
           );
 
         if (insertError) throw insertError;
       }
 
-      // 4️⃣ Notif & close
       onUpdated();
       onClose();
     } catch (err: any) {
@@ -144,45 +126,30 @@ export function EditSequenceDialog({
 
         <div className="space-y-3">
           <textarea
-            className="w-full p-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Emails (separated by space, comma or newline)"
+            className="w-full p-2 rounded border"
+            placeholder="Emails (comma/space/newline separated)"
             value={toEmail}
             onChange={(e) => setToEmail(e.target.value)}
             rows={3}
           />
-          <div className="flex flex-wrap gap-1">
-            {parsedEmails.slice(0, 4).map((email, index) => (
-              <span
-                key={index}
-                className="bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 text-xs font-medium px-2 py-1 rounded"
-              >
-                {email}
-              </span>
-            ))}
-            {parsedEmails.length > 4 && (
-              <span className="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-100 text-xs font-medium px-2 py-1 rounded">
-                … And{" "}
-                {parsedEmails.length > 99 ? "99+" : parsedEmails.length - 4}{" "}
-                Others
-              </span>
-            )}
-          </div>
 
           <input
-            className="w-full p-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 rounded border"
             placeholder="Subject"
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
           />
+
           <textarea
-            className="w-full p-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 rounded border"
             rows={4}
-            placeholder="Email's body"
+            placeholder="Body"
             value={body}
             onChange={(e) => setBody(e.target.value)}
           />
+
           <select
-            className="w-full p-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 rounded border"
             value={recurrence}
             onChange={(e) => setRecurrence(e.target.value)}
           >
@@ -192,29 +159,31 @@ export function EditSequenceDialog({
             <option value="yearly">Every year</option>
             <option value="once">Once</option>
           </select>
+
           <input
             type="datetime-local"
-            className="w-full p-2 rounded border border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-2 rounded border"
             value={scheduledAt}
             onChange={(e) => setScheduledAt(e.target.value)}
           />
+
           {error && <p className="text-red-500 text-sm">⚠️ {error}</p>}
         </div>
 
         <div className="flex justify-end gap-4 pt-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded bg-gray-200 dark:bg-red-700 hover:bg-gray-300 dark:hover:bg-red-300 transition"
+            className="px-4 py-2 rounded bg-gray-300"
             disabled={loading}
           >
             Cancel
           </button>
           <button
             onClick={handleUpdate}
-            className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50"
+            className="px-4 py-2 rounded bg-blue-600 text-white"
             disabled={loading}
           >
-            {loading ? "Updating..." : "Saving"}
+            {loading ? "Saving..." : "Save"}
           </button>
         </div>
       </div>
