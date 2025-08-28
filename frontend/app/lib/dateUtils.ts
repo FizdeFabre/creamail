@@ -1,20 +1,29 @@
 // lib/dateUtils.ts
-import { format, parseISO } from "date-fns";
+import { parseISO, format } from "date-fns";
 
 /**
- * ✅ Sauvegarde une heure locale "naïve" dans Postgres
- * Exemple : "2025-08-28T10:00" → "2025-08-28T10:00:00"
- * (⚠️ Pas de "Z", donc pas de décalage UTC)
+ * 🚀 Converts a local datetime (from <input type="datetime-local">) to UTC string for Postgres
  */
-// Sauvegarde
-export function toPostgresTimestamp(input: string): string {
-  const d = new Date(input); // input = "2025-08-28T10:00"
-  return d.toISOString();    // "2025-08-28T08:00:00Z" (si UTC+2)
+export function toPostgresTimestamp(date: string | Date | null): string | null {
+  if (!date) return null;
+
+  const d = typeof date === "string" ? new Date(date) : date;
+
+  // Important: stocker en UTC pur
+  return d.toISOString(); // Postgres adore ça
 }
 
-// Lecture
+/**
+ * 🚀 Converts a UTC string (from Postgres) into local human-readable string
+ */
 export function formatUtcToLocal(utcString: string | null): string {
-  if (!utcString) return "Not scheduled"; // valeur par défaut
-  const d = new Date(utcString);
-  return d.toLocaleString("fr-FR", { hour12: false });
+  if (!utcString) return "Not scheduled";
+
+  try {
+    const d = parseISO(utcString); // toujours UTC
+    return format(d, "yyyy-MM-dd HH:mm"); // affiché en LOCAL
+  } catch (e) {
+    console.error("Invalid UTC date:", utcString, e);
+    return utcString ?? "";
+  }
 }
