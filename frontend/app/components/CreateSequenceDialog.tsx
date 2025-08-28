@@ -5,7 +5,6 @@ import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import "@/app/styles/globals.css";
 import { DateTime } from "luxon";
-import { formatUtcToLocal } from "@/app/lib/dateUtils";
 
 interface Props {
     open: boolean;

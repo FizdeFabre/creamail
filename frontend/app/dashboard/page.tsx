@@ -202,9 +202,11 @@ export default function Dashboard() {
 
 const handleEdit = (sequence: Sequence) => {
   setEditData({
-    ...sequence,
-scheduled_at: toPostgresTimestamp(sequence.scheduled_at ?? new Date().toISOString()),
-  });
+  ...sequence,
+  // Ne re-transforme pas la date si elle vient déjà de la DB
+  scheduled_at: sequence.scheduled_at ?? new Date().toISOString(),
+});
+
   setShowEditDialog(true);
 };
 
@@ -355,9 +357,7 @@ scheduled_at: toPostgresTimestamp(sequence.scheduled_at ?? new Date().toISOStrin
                   <p>
                     <strong>Scheduled for:</strong>{" "}
                     <span className="font-mono">
-                     {seq.scheduled_at 
-  ? formatUtcToLocal(seq.scheduled_at) 
-  : "Not scheduled"}
+                      {formatUtcToLocal(seq.scheduled_at)}
                     </span>
                   </p>
                 </div>
