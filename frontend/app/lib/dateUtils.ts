@@ -13,7 +13,8 @@ export function toPostgresTimestamp(input: string): string {
 }
 
 // Lecture
-export function formatUtcToLocal(utcString: string): string {
-  const d = new Date(utcString); 
+export function formatUtcToLocal(utcString: string | null): string {
+  if (!utcString) return "Not scheduled"; // valeur par défaut
+  const d = new Date(utcString);
   return d.toLocaleString("fr-FR", { hour12: false });
 }
