@@ -19,7 +19,7 @@ interface Sequence {
   body: string;
   to_email: string[];
   recurrence: string;
-  scheduled_at: string;
+   scheduled_at: string | null; // <-- là, string ou null
   user_id: string;
 }
 
@@ -203,7 +203,7 @@ export default function Dashboard() {
 const handleEdit = (sequence: Sequence) => {
   setEditData({
     ...sequence,
-    scheduled_at: sequence.scheduled_at ? toPostgresTimestamp(sequence.scheduled_at) : new Date().toISOString(),
+scheduled_at: toPostgresTimestamp(sequence.scheduled_at ?? new Date().toISOString()),
   });
   setShowEditDialog(true);
 };
