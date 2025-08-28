@@ -7,6 +7,7 @@ import { EditSequenceDialog } from "@/app/components/EditSequenceDialog";
 import { MultiEmailDisplay } from "@/app/components/MultiEmailDisplay";
 import useSubscription from "@/app/lib/useSubscription";
 import { formatUtcToLocal } from "@/app/lib/dateUtils";
+import { toPostgresTimestamp } from "@/app/lib/dateUtils";
 import { ensureUtcISOString } from "@/app/lib/dateTypeShit";
 import { parse, formatISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -152,53 +153,60 @@ export default function Dashboard() {
     }
   };
 
-  const handleDuplicate = async (id: string) => {
-    if (!canCreateSequence) {
-      setErrorMsg("Limit reached for your subscription. Cannot duplicate.");
-      setTimeout(() => setErrorMsg(""), 3000);
-      return;
-    }
-    const { data, error } = await supabase
-      .from("email_sequences")
-      .select("*, sequence_recipients(to_email)")
-      .eq("id", id)
-      .single();
+ const handleDuplicate = async (id: string) => {
+  if (!canCreateSequence) {
+    setErrorMsg("Limit reached for your subscription. Cannot duplicate.");
+    setTimeout(() => setErrorMsg(""), 3000);
+    return;
+  }
 
-    if (error || !data) return;
+  const { data, error } = await supabase
+    .from("email_sequences")
+    .select("*, sequence_recipients(to_email)")
+    .eq("id", id)
+    .single();
 
-    const { subject, body, recurrence, scheduled_at, sequence_recipients } = data;
+  if (error || !data) return;
 
-    const { data: newSequence, error: insertError } = await supabase
-      .from("email_sequences")
-      .insert({
-        subject: subject + " (copy)",
-        body,
-        recurrence,
-        scheduled_at: ensureUtcISOString(scheduled_at),
-        user_id: userId,
-        created_at: new Date().toISOString(),
-      })
-      .select()
-      .single();
+  const { subject, body, recurrence, scheduled_at, sequence_recipients } = data;
 
-    if (insertError || !newSequence) return;
+  // ⚡ Convert scheduled_at correctement pour PostgreSQL
+  const isoDate = toPostgresTimestamp(scheduled_at);
 
-    const recipientInserts = (sequence_recipients || []).map((r: SequenceRecipient) => ({
-      sequence_id: newSequence.id,
-      to_email: r.to_email,
-    }));
+  const { data: newSequence, error: insertError } = await supabase
+    .from("email_sequences")
+    .insert({
+      subject: subject + " (copy)",
+      body,
+      recurrence,
+      scheduled_at: isoDate,
+      user_id: userId,
+      created_at: new Date().toISOString(),
+    })
+    .select()
+    .single();
 
-    if (recipientInserts.length > 0) {
-      await supabase.from("sequence_recipients").insert(recipientInserts);
-    }
+  if (insertError || !newSequence) return;
 
-    if (userId) loadSequences(userId, sortOption);
-  };
+  const recipientInserts = (sequence_recipients || []).map((r: SequenceRecipient) => ({
+    sequence_id: newSequence.id,
+    to_email: r.to_email,
+  }));
 
-  const handleEdit = (sequence: Sequence) => {
-    setEditData(sequence);
-    setShowEditDialog(true);
-  };
+  if (recipientInserts.length > 0) {
+    await supabase.from("sequence_recipients").insert(recipientInserts);
+  }
+
+  if (userId) loadSequences(userId, sortOption);
+};
+
+const handleEdit = (sequence: Sequence) => {
+  setEditData({
+    ...sequence,
+    scheduled_at: sequence.scheduled_at ? toPostgresTimestamp(sequence.scheduled_at) : new Date().toISOString(),
+  });
+  setShowEditDialog(true);
+};
 
   return (
     <div className="max-w-6xl mx-auto py-12 px-6">

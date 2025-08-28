@@ -18,3 +18,9 @@ export const formatUtcToLocal = (utcString: string): string => {
     return utcString;
   }
 };
+
+export function toPostgresTimestamp(input: string | Date): string {
+  if (!input) throw new Error("Invalid date");
+  const date = typeof input === "string" ? new Date(input) : input;
+  return date.toISOString();
+}
