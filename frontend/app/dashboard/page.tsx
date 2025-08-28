@@ -290,7 +290,7 @@ export default function Dashboard() {
           <div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-xl w-full max-w-xl relative max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setSelectedSequence(null)}
-              className="absolute top-3 right-3 text-white hover:text-white text-xl font-bold"
+              className="absolute top-3 right-3 text-white hover:text-white text-xl"
               aria-label="Close"
             >
               Back to the Dashboard
@@ -362,13 +362,13 @@ export default function Dashboard() {
                 <button
                   onClick={() => handleDuplicate(seq.id)}
                   disabled={!canCreateSequence}
-                  className="bg-indigo-500 hover:bg-purple-600 text-white py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-yellow-500 hover:bg-purple-600 text-white py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Duplicate
                 </button>
                 <button
                   onClick={() => setDeleteTarget(seq)}
-                  className="bg-indigo-500 hover:bg-purple-600 text-white py-2 rounded-md"
+                  className="bg-red-500 hover:bg-purple-600 text-white py-2 rounded-md"
                 >
                   Delete
                 </button>
@@ -391,7 +391,7 @@ export default function Dashboard() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded"
+                className="bg-red-700 dark:bg-red-800 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded"
               >
                 Cancel
               </button>
