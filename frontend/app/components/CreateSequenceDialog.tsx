@@ -4,7 +4,6 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import "@/app/styles/globals.css";
-import { DateTime } from "luxon";
 
 interface Props {
     open: boolean;
@@ -17,15 +16,18 @@ const isValidEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 export function localDateTimeToUTCISOString(localDateTime: string): string {
-    const dt = DateTime.fromISO(localDateTime, { zone: "local" });
-    const isoString = dt.toUTC().toISO();
+  if (!localDateTime) throw new Error("Empty datetime");
 
-    if (!isoString) {
-        throw new Error("Invalid date, Impossible to convert to UTC.");
-    }
+  // localDateTime format: "YYYY-MM-DDTHH:mm"
+  const [datePart, timePart] = localDateTime.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
 
-    return isoString;
+  // On fabrique une Date en UTC à partir des composants locaux
+  const d = new Date(Date.UTC(year, month - 1, day, hour, minute));
+  return d.toISOString();
 }
+
 export function CreateSequenceDialog({
     open,
     onClose,
