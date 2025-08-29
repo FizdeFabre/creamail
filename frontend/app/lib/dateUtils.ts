@@ -1,24 +1,23 @@
-import { format, parseISO } from "date-fns";
-
 /**
- * Transforme une valeur locale (ex: <input type="datetime-local">)
- * en UTC ISO pour PostgreSQL.
+ * Transforme un string local "YYYY-MM-DDTHH:mm"
+ * en vrai UTC ISO string pour PostgreSQL.
  */
 export function toPostgresTimestamp(input: string | null): string | null {
   if (!input) return null;
 
-  // On prend la valeur comme locale, on la stocke brute en UTC
-  const d = new Date(input);
+  // Découpe à la main
+  const [datePart, timePart] = input.split("T");
+  const [year, month, day] = datePart.split("-").map(Number);
+  const [hour, minute] = timePart.split(":").map(Number);
+
+  // On fabrique la date en UTC directement
+  const d = new Date(Date.UTC(year, month - 1, day, hour, minute));
   return d.toISOString();
 }
 
-/**
- * Transforme une valeur UTC ISO venant de PostgreSQL
- * en heure lisible locale pour affichage.
- */
 export function formatUtcToLocal(utcString: string | null): string {
   if (!utcString) return "";
-  const d = new Date(utcString); // parseISO peut rester, mais new Date est OK aussi
+  const d = new Date(utcString);
   return d.toLocaleString("fr-FR", {
     year: "numeric",
     month: "2-digit",

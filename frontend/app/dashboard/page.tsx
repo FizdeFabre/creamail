@@ -201,9 +201,9 @@ export default function Dashboard() {
 };
 
 const handleEdit = (sequence: Sequence) => {
-  setEditData({
+setEditData({
   ...sequence,
-  // Ne re-transforme pas la date si elle vient déjà de la DB
+  // Ne reconvertis pas une date déjà en UTC depuis la DB
   scheduled_at: sequence.scheduled_at ?? new Date().toISOString(),
 });
 
