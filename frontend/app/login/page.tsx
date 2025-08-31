@@ -38,7 +38,7 @@ export default function LoginPage() {
         <main className="min-h-screen flex items-center justify-center bg-gradient-to-tr from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 dark:bg-gray-950 px-4">
             <div className="w-full max-w-md bg-white dark:bg-gray-900 p-8 rounded-2xl shadow-xl border border-gray-200 dark:border-gray-800">
                 <h1 className="text-3xl font-semibold text-gray-900 dark:text-white tracking-tight mb-6 text-center">
-                    🔐 Connexion
+                    🔐 Connection
                 </h1>
 
                 <form onSubmit={handleLogin} className="space-y-5">

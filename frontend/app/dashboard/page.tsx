@@ -230,13 +230,13 @@ setEditData({
           onClick={() => router.push("/dashboard/lockdown")}
           className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow"
         >
-          View statistics
+          View statistics (Coming soon)
         </button>
         <button
-          onClick={() => router.push("/dashboard/calender")}
+          onClick={() => router.push("/dashboard/calendar")}
           className="bg-gray-400 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-lg shadow"
         >
-          Calendar (Coming soon)
+          Calendar 
         </button>
         <button
           onClick={() => router.push("/dashboard/settings")}
@@ -248,7 +248,7 @@ setEditData({
           onClick={() => router.push("/dashboard/lockdown")}
           className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-lg shadow"
         >
-          Billing
+          Billing (Coming soon)
         </button>
       </div>
 
@@ -292,38 +292,42 @@ setEditData({
       )}
 
       {selectedSequence && (
-        // ##### C'EST QUOI CE BOUTON DE SALOPARD ?!!! ######
-        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="max-w-6xl mx-auto py-12 px-6">
+  <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div className="relative max-w-4xl w-full bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-8 overflow-y-auto max-h-[90vh]">
+      
+      {/* Bouton fermer en haut à droite */}
       <button
-        onClick={() => router.push("/dashboard")}
-        className="bg-indigo-600 hover:bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition"
+        onClick={() => setSelectedSequence(null)}
+        className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 dark:hover:text-gray-200"
       >
-        ← Back to Dashboard
+        Back to the Dashboard
       </button>
-        
-            <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
-              {selectedSequence.subject}
-            </h2>
-            <div className="mb-4">
-              <p className="text-gray-600 dark:text-gray-300 text-sm mb-1">To:</p>
-              <MultiEmailDisplay emails={selectedSequence.to_email} />
-            </div>
-            <div className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap mb-4 overflow-y-auto max-h-[300px]">
-              {selectedSequence.body}
-            </div>
-            <div className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-              <p><strong>Recurrence:</strong> <em>{selectedSequence.recurrence}</em></p>
-              <p>
-                <strong>Scheduled for:</strong>{" "}
-                <span className="font-mono">
-                  {formatUtcToLocal(selectedSequence.scheduled_at)}
-                </span>
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+        {selectedSequence.subject}
+      </h2>
+
+      <div className="mb-4">
+        <p className="text-gray-600 dark:text-gray-300 text-sm mb-1">To:</p>
+        <MultiEmailDisplay emails={selectedSequence.to_email} />
+      </div>
+
+      <div className="text-gray-800 dark:text-gray-200 whitespace-pre-wrap mb-6 overflow-y-auto border border-dashed border-gray-300 dark:border-gray-600 rounded p-4 max-h-[250px]">
+        {selectedSequence.body}
+      </div>
+
+      <div className="text-sm text-gray-500 dark:text-gray-400">
+        <p><strong>Recurrence:</strong> <em>{selectedSequence.recurrence}</em></p>
+        <p>
+          <strong>Scheduled for:</strong>{" "}
+          <span className="font-mono">
+            {formatUtcToLocal(selectedSequence.scheduled_at)}
+          </span>
+        </p>
+      </div>
+    </div>
+  </div>
+)}
 
       {loading ? (
         <p className="text-center text-lg text-gray-600 dark:text-gray-300">Loading...</p>
