@@ -28,6 +28,8 @@ type EventType = {
   };
 };
 
+
+
 export default function CalendarPage() {
   const { loading, abonnementActif, type_Abonnement } = useSubscription();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -39,6 +41,8 @@ export default function CalendarPage() {
 
   const router = useRouter();
   const { sequences, loading: loadingSequences } = useSequences(userId);
+
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -256,34 +260,32 @@ export default function CalendarPage() {
                     <ul className="mt-2 space-y-2">
                       {group.map((event, idx) => {
                         const emails = Array.isArray(event.resource.to_email)
-                          ? event.resource.to_email
-                          : event.resource.to_email
-                            ? event.resource.to_email.split(",").map(e => e.trim())
-                            : [];
+  ? event.resource.to_email
+  : event.resource.to_email
+    ? event.resource.to_email.split(",").map(e => e.trim())
+    : [];
 
-                        const displayEmails = emails.slice(0, 4);
-                        const remaining = emails.length - displayEmails.length;
-
+const displayEmails = emails.slice(0, 4);
+const remaining = emails.length - displayEmails.length;
+                          
                         return (
                           <li
                             key={idx}
                             className="border-l-4 border-indigo-900 pl-4 py-2 bg-gray-50 dark:bg-gray-700 rounded-md"
                           >
-                            <p className="text-sm text-gray-700 dark:text-white">
-                              📩 To:{" "}
-                              {event.resource.to_email.length > 0 ? (
-                                <>
-                                  {displayEmails.join(", ")}
-                                  {remaining > 0 && (
-                                    <span>
-                                      {" "}And {remaining > 99 ? "+99" : remaining} more
-                                    </span>
-                                  )}
-                                </>
-                              ) : (
-                                <em>No emails specified</em>
-                              )}
-                            </p>
+                           <p className="text-sm text-gray-700 dark:text-white">
+  📩 To:{" "}
+  {emails.length > 0 ? (
+    <>
+      {displayEmails.join(", ")}
+      {remaining > 0 && (
+        <span>{" "}And {remaining > 99 ? "+99" : remaining} more</span>
+      )}
+    </>
+  ) : (
+    <em>No emails specified</em>
+  )}
+</p>
                             <p className="text-xs text-gray-400 italic">
                               🔁 Recurrence: {event.resource.recurrence || "None"}
                             </p>
