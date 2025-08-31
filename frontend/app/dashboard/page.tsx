@@ -8,9 +8,6 @@ import { MultiEmailDisplay } from "@/app/components/MultiEmailDisplay";
 import useSubscription from "@/app/lib/useSubscription";
 import { formatUtcToLocal } from "@/app/lib/dateUtils";
 import { toPostgresTimestamp } from "@/app/lib/dateUtils";
-import { ensureUtcISOString } from "@/app/lib/dateTypeShit";
-import { parse, formatISO } from "date-fns";
-import { fr } from "date-fns/locale";
 
 interface Sequence {
   id: string;
@@ -242,7 +239,7 @@ setEditData({
           Calendar (Coming soon)
         </button>
         <button
-          onClick={() => router.push("/dashboard/settingsdeux")}
+          onClick={() => router.push("/dashboard/settings")}
           className="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg shadow"
         >
           Settings
@@ -297,14 +294,13 @@ setEditData({
       {selectedSequence && (
         // ##### C'EST QUOI CE BOUTON DE SALOPARD ?!!! ######
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-lg p-6 shadow-xl w-full max-w-xl relative max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setSelectedSequence(null)}
-              className="absolute top-3 right-3 text-white hover:text-white text-xl"
-              aria-label="Close"
-            >
-              Back to the Dashboard
-            </button>
+          <div className="max-w-6xl mx-auto py-12 px-6">
+      <button
+        onClick={() => router.push("/dashboard")}
+        className="bg-indigo-600 hover:bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition"
+      >
+        ← Back to Dashboard
+      </button>
         
             <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-white">
               {selectedSequence.subject}

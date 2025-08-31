@@ -122,7 +122,7 @@
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div className="bg-white dark:bg-zinc-900 text-black dark:text-white p-6 rounded-2xl shadow-xl w-full max-w-lg space-y-4">
           <h2 className="text-2xl font-semibold">
-            Modify Sequence <span className="text-blue-600">#{sequence.id}</span>
+            Modify Sequence <span className="text-blue-600">#{sequence.subject}</span>
           </h2>
 
           <div className="space-y-3">

@@ -21,10 +21,10 @@ type EventType = {
   end: Date;
   allDay: boolean;
   resource: {
-    subject: string;
-    to_email: string[] | string;
-    recurrence: string;
-    [key: string]: any;
+  subject: string;
+  to_email: string[] | string;
+  recurrence: string;
+  [key: string]: any;
   };
 };
 
@@ -271,7 +271,7 @@ export default function CalendarPage() {
                           >
                             <p className="text-sm text-gray-700 dark:text-white">
                               📩 To:{" "}
-                              {emails.length > 0 ? (
+                              {event.resource.to_email.length > 0 ? (
                                 <>
                                   {displayEmails.join(", ")}
                                   {remaining > 0 && (
