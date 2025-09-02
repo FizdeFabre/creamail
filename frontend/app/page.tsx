@@ -9,7 +9,7 @@ export default function HomePage() {
 return (
   <main className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-tr from-white to-blue-50 dark:from-gray-900 dark:to-gray-800 px-6 text-center">
     <h1 className="text-5xl font-extrabold text-indigo-700 dark:text-indigo-400 mb-4">
-      EchoNotes
+      Creamail
     </h1>
     <p className="text-lg text-gray-700 dark:text-gray-300 max-w-xl mb-10">
       Schedule your thoughts. Let them resonate in the future.
