@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { useRedirectIfNotAuthenticated } from "@/lib/useRedirectIfAuthenticated";
+import { useRedirectIfAuthenticated } from "@/lib/useRedirectIfAuthenticated";
 import Link from "next/link";
 export default function LoginPage() {
-    useRedirectIfNotAuthenticated();
+    useRedirectIfAuthenticated();
 
     const router = useRouter();
 

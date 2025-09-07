@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-export function useRedirectIfNotAuthenticated() {
+export function useRedirectIfAuthenticated() {
   const router = useRouter();
 
   useEffect(() => {
