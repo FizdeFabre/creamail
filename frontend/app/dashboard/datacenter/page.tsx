@@ -38,12 +38,18 @@ export default function DataCenterPage() {
    useEffect(() => {
   const fetchData = async () => {
     try {
-      const statsRes = await fetch("/api/events/stats");
+      const statsRes = await fetch("/api/events/stats", {
+  method: "GET",
+  credentials: "include",
+});
       if (statsRes.status === 401) throw new Error("Non autorisé");
       const statsData = await statsRes.json();
       setStats(statsData);
 
-      const summaryRes = await fetch("/api/summarize");
+      const summaryRes = await fetch("/api/summarize", {
+  method: "GET",
+  credentials: "include",
+});
       const summaryData = await summaryRes.json();
       if (summaryData.summary) setSummary(summaryData.summary);
     } catch (e) {
