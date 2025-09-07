@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import useSubscription from "@/app/lib/useSubscription";
-import { supabase } from "../../../lib/supabaseClient";
 
 interface StatsData {
     totalSent: number;
@@ -36,26 +35,26 @@ export default function DataCenterPage() {
     const { abonnementActif, type_Abonnement } = useSubscription();
 
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const statsRes = await fetch("/api/stats");
-                if (statsRes.status === 401) throw new Error("Non autorisé");
-                const statsData = await statsRes.json();
-                setStats(statsData);
+   useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const statsRes = await fetch("/api/events/stats");
+      if (statsRes.status === 401) throw new Error("Non autorisé");
+      const statsData = await statsRes.json();
+      setStats(statsData);
 
-                const summaryRes = await fetch("/api/summarize");
-                const summaryData = await summaryRes.json();
-                if (summaryData.summary) setSummary(summaryData.summary);
-            } catch (e) {
-                console.error("Erreur récupération des données :", e);
-            } finally {
-                setLoading(false);
-            }
-        };
+      const summaryRes = await fetch("/api/summarize");
+      const summaryData = await summaryRes.json();
+      if (summaryData.summary) setSummary(summaryData.summary);
+    } catch (e) {
+      console.error("Erreur récupération des données :", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-        fetchData();
-    }, []);
+  fetchData();
+}, []);
 
     if (loading) {
         return (

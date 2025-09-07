@@ -227,7 +227,7 @@ setEditData({
           </p>
         )}
         <button
-          onClick={() => router.push("/dashboard/lockdown")}
+          onClick={() => router.push("/dashboard/datacenter")}
           className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow"
         >
           View statistics (Coming soon)
