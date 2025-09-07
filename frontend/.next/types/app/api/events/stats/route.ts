@@ -1,4 +1,4 @@
-// File: C:\Users\facho\echonotes\frontend\app\api\events\stats\route.js
+// File: C:\Users\facho\echonotes\frontend\app\api\events\stats\route.ts
 import * as entry from '../../../../../../app/api/events/stats/route.js'
 import type { NextRequest } from 'next/server.js'
 
