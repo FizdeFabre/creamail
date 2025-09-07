@@ -14,23 +14,23 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+    
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setErrorMsg("");
+const { data, error } = await supabase.auth.signInWithPassword({
+  email,
+  password,
+});
 
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email,
-            password,
-        });
-
-        if (error) {
-            setErrorMsg(error.message);
-        } else {
-            router.replace("/dashboard");
-        }
-
+if (error) {
+  setErrorMsg(error.message);
+} else {
+  await supabase.auth.getSession(); // 👈 force la synchro du cookie
+  router.replace("/dashboard");
+}
         setLoading(false);
     };
 
