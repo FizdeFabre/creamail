@@ -45,13 +45,7 @@ export default function DataCenterPage() {
       if (statsRes.status === 401) throw new Error("Non autorisé");
       const statsData = await statsRes.json();
       setStats(statsData);
-
-      const summaryRes = await fetch("/api/summarize", {
-  method: "GET",
-  credentials: "include",
-});
-      const summaryData = await summaryRes.json();
-      if (summaryData.summary) setSummary(summaryData.summary);
+    
     } catch (e) {
       console.error("Erreur récupération des données :", e);
     } finally {

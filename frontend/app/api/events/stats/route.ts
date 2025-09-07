@@ -1,19 +1,26 @@
 import { cookies } from "next/headers";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET() {
   try {
+    // --- OPTION 1 : client lié à la session utilisateur ---
     const supabase = createRouteHandlerClient({ cookies });
 
-    // Vérification utilisateur
+    // Vérifie l'utilisateur connecté
     const { data: { user }, error: userError } = await supabase.auth.getUser();
-    console.log("API /stats user:", user, "error:", userError);
-
     if (userError || !user) {
+      console.error("Pas d'utilisateur trouvé :", userError);
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
-    
+
     const userId = user.id;
+
+    // --- OPTION 2 : client admin (si besoin d'un bypass auth)
+    // const supabaseAdmin = createClient(
+    //   process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    //   process.env.SUPABASE_SERVICE_ROLE_KEY!
+    // );
 
     // Récupérer les séquences de l'utilisateur
     const { data: sequencesData, error: seqError } = await supabase
@@ -53,8 +60,8 @@ export async function GET() {
     const openRate = totalSent ? (totalOpened / totalSent) * 100 : 0;
 
     // Agrégations temporelles
-    const perDayMap = {};
-    const perMonthMap = {};
+    const perDayMap: Record<string, number> = {};
+    const perMonthMap: Record<string, number> = {};
     for (const e of sends) {
       const d = new Date(e.sent_at);
       const day = d.toISOString().slice(0, 10);
@@ -67,7 +74,7 @@ export async function GET() {
     const perMonth = Object.entries(perMonthMap).map(([date, count]) => ({ date, count }));
 
     // Résultats A/B
-    const variantMap = {};
+    const variantMap: Record<string, { totalSent: number; totalOpened: number }> = {};
     for (const e of sends) {
       const v = e.variant || "A"; // fallback si pas défini
       if (!variantMap[v]) {
