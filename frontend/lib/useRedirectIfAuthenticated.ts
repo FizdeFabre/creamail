@@ -1,15 +1,17 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useUserSession } from "./useUserSession";
+
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
 
-export function useRedirectIfAuthenticated() {
-    const { session, loading } = useUserSession();
-    const router = useRouter();
+export function useRedirectIfNotAuthenticated() {
+  const router = useRouter();
 
-    useEffect(() => {
-        if (!loading && session) {
-            router.replace("/dashboard");
-        }
-    }, [session, loading, router]);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      if (!data.session) {
+        router.replace("/login"); // redirige si pas connecté
+      }
+    });
+  }, [router]);
 }

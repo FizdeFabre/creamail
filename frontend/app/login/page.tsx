@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
-import { useRedirectIfAuthenticated } from "@/lib/useRedirectIfAuthenticated";
+import { useRedirectIfNotAuthenticated } from "@/lib/useRedirectIfAuthenticated";
 import Link from "next/link";
 export default function LoginPage() {
-    useRedirectIfAuthenticated();
+    useRedirectIfNotAuthenticated();
 
     const router = useRouter();
 
@@ -14,7 +14,7 @@ export default function LoginPage() {
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
-    
+
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
