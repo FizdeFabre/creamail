@@ -1,15 +1,18 @@
 import { cookies } from "next/headers";
-import { createServerComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 
 export async function GET() {
   try {
-    const supabase = createServerComponentClient({ cookies });
+    const supabase = createRouteHandlerClient({ cookies });
 
     // Vérification utilisateur
     const { data: { user }, error: userError } = await supabase.auth.getUser();
+    console.log("API /stats user:", user, "error:", userError);
+
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
+    
     const userId = user.id;
 
     // Récupérer les séquences de l'utilisateur
