@@ -13,7 +13,10 @@ export async function GET(req) {
     const { data: { user }, error: userError } = await supabase.auth.getUser(token);
 
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized", detail: userError }), { status: 401 });
+      return new Response(
+        JSON.stringify({ error: "Unauthorized", detail: userError ?? "User not found" }),
+        { status: 401 }
+      );
     }
 
     const userId = user.id;
@@ -56,8 +59,16 @@ export async function GET(req) {
     }));
 
     return new Response(JSON.stringify({ totalSent, totalOpened, openRate, variants: variantStats }), { status: 200 });
+
   } catch (err) {
     console.error("Stats API error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error", detail: String(err) }), { status: 500 });
+
+    // ✅ transforme l'erreur en string lisible pour JSON
+    const detail = err instanceof Error ? err.message : JSON.stringify(err, Object.getOwnPropertyNames(err));
+
+    return new Response(
+      JSON.stringify({ error: "Internal server error", detail }),
+      { status: 500 }
+    );
   }
 }
