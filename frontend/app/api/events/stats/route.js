@@ -1,41 +1,31 @@
 // app/api/events/stats/route.js
-import { cookies, headers } from "next/headers";
-import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
+import { headers } from "next/headers";
+import { createClient } from "@supabase/supabase-js";
 
 export async function GET() {
   try {
-    // createRouteHandlerClient lit les cookies du request (Next App Router)
-    const supabase = createRouteHandlerClient({ cookies });
+    // --- Setup Supabase client avec ton URL + clé service (env obligatoire) ---
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY // ⚠️ pas NEXT_PUBLIC (jamais exposer côté client)
+    );
 
-    // debug raw headers & cookies
-    const rawHeaders = Object.fromEntries(headers().entries());
-    const rawCookies = cookies().getAll().map(c => ({ name: c.name, value: c.value }));
+    // --- Lire le Bearer token ---
+    const authHeader = headers().get("authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Missing Bearer token" }), { status: 401 });
+    }
+    const token = authHeader.slice(7);
 
-console.log("🔍 API /stats headers:", Object.fromEntries(headers().entries()));
-console.log("🔍 API /stats cookies:", cookies().getAll());
-    // attempt to read session/user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-    console.log("API DEBUG - headers (sample):", {
-      host: rawHeaders.host,
-      referer: rawHeaders.referer,
-      cookie_header_present: !!rawHeaders.cookie
-    });
-    console.log("API DEBUG - cookies (names):", rawCookies.map(c => c.name));
-    console.log("API DEBUG - user:", user ? user.id : null, "userError:", userError ?? null);
-    console.log("API DEBUG - session:", session ? { user_id: session.user?.id, expires_at: session.expires_at } : null, "sessionError:", sessionError ?? null);
-
+    // --- Vérifier le token / récupérer l’utilisateur ---
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
     if (userError || !user) {
-      return new Response(JSON.stringify({
-        error: "Unauthorized",
-        debug: { headers: { host: rawHeaders.host, cookie_present: !!rawHeaders.cookie }, cookies: rawCookies }
-      }), { status: 401 });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
     }
 
     const userId = user.id;
 
-    // --- real stats logic below (unchanged) ---
+    // --- Récupérer les séquences de l’utilisateur ---
     const { data: sequencesData, error: seqError } = await supabase
       .from("email_sequences")
       .select("id, campaign_name")
@@ -53,11 +43,11 @@ console.log("🔍 API /stats cookies:", cookies().getAll());
         openRate: 0,
         perDay: [],
         perMonth: [],
-        variants: [],
-        debug: { headers: rawHeaders, cookies: rawCookies }
+        variants: []
       }), { status: 200 });
     }
 
+    // --- Récupérer les envois liés ---
     const { data: sendsData, error: sendsError } = await supabase
       .from("emails_sent")
       .select("id, sent_at, opened, variant, sequence_id")
@@ -66,11 +56,12 @@ console.log("🔍 API /stats cookies:", cookies().getAll());
     if (sendsError) throw sendsError;
     const sends = sendsData ?? [];
 
-    // compute stats + A/B
+    // --- Calculs globaux ---
     const totalSent = sends.length;
     const totalOpened = sends.filter(e => e.opened).length;
     const openRate = totalSent ? (totalOpened / totalSent) * 100 : 0;
 
+    // --- Par jour / par mois ---
     const perDayMap = {};
     const perMonthMap = {};
     sends.forEach(e => {
@@ -81,9 +72,11 @@ console.log("🔍 API /stats cookies:", cookies().getAll());
       perDayMap[day] = (perDayMap[day] || 0) + 1;
       perMonthMap[month] = (perMonthMap[month] || 0) + 1;
     });
+
     const perDay = Object.entries(perDayMap).map(([date, count]) => ({ date, count }));
     const perMonth = Object.entries(perMonthMap).map(([date, count]) => ({ date, count }));
 
+    // --- Résultats A/B ---
     const variantMap = {};
     for (const e of sends) {
       const v = e.variant || "A";
@@ -91,11 +84,12 @@ console.log("🔍 API /stats cookies:", cookies().getAll());
       variantMap[v].totalSent++;
       if (e.opened) variantMap[v].totalOpened++;
     }
-    const variants = Object.entries(variantMap).map(([variant, s]) => ({
+
+    const variants = Object.entries(variantMap).map(([variant, stats]) => ({
       variant,
-      totalSent: s.totalSent,
-      totalOpened: s.totalOpened,
-      openRate: s.totalSent ? (s.totalOpened / s.totalSent) * 100 : 0
+      totalSent: stats.totalSent,
+      totalOpened: stats.totalOpened,
+      openRate: stats.totalSent ? (stats.totalOpened / stats.totalSent) * 100 : 0
     }));
 
     return new Response(JSON.stringify({
@@ -104,12 +98,11 @@ console.log("🔍 API /stats cookies:", cookies().getAll());
       openRate,
       perDay,
       perMonth,
-      variants,
-      debug: { headers: rawHeaders, cookies: rawCookies }
+      variants
     }), { status: 200 });
 
   } catch (err) {
-    console.error("API DEBUG - error:", err);
-    return new Response(JSON.stringify({ error: "Erreur fetch emails_sent", detail: String(err) }), { status: 500 });
+    console.error("API ERROR /stats:", err);
+    return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
   }
 }
