@@ -1,24 +1,21 @@
-// pages/api/events/stats.js
 import { createClient } from "@supabase/supabase-js";
 
 const supabaseAdmin = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // service role key pour lire toutes les tables
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-export default async function handler(req, res) {
+export async function GET(request) {
   try {
-    if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
-
-    const token = req.headers.authorization?.split(" ")[1];
-    if (!token) return res.status(401).json({ error: "Unauthorized - no token" });
+    const authHeader = request.headers.get("authorization");
+    const token = authHeader?.split(" ")[1];
+    if (!token) return new Response(JSON.stringify({ error: "Unauthorized - no token" }), { status: 401 });
 
     const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !user) return res.status(401).json({ error: "Unauthorized", detail: userError?.message });
+    if (userError || !user) return new Response(JSON.stringify({ error: "Unauthorized", detail: userError?.message }), { status: 401 });
 
     const userId = user.id;
 
-    // Récupérer les séquences
     const { data: sequences, error: seqError } = await supabaseAdmin
       .from("email_sequences")
       .select("id, campaign_name")
@@ -27,29 +24,21 @@ export default async function handler(req, res) {
 
     const sequenceIds = sequences.map(s => s.id);
     if (!sequenceIds.length) {
-      return res.status(200).json({
-        totalSent: 0,
-        totalOpened: 0,
-        openRate: 0,
-        perDay: [],
-        perMonth: [],
-        variants: [],
-      });
+      return new Response(JSON.stringify({
+        totalSent: 0, totalOpened: 0, openRate: 0, perDay: [], perMonth: [], variants: []
+      }), { status: 200 });
     }
 
-    // Récupérer les envois
     const { data: sends, error: sendsError } = await supabaseAdmin
       .from("emails_sent")
       .select("id, sent_at, opened, variant, sequence_id")
       .in("sequence_id", sequenceIds);
     if (sendsError) throw sendsError;
 
-    // Stats globales
     const totalSent = sends.length;
     const totalOpened = sends.filter(e => e.opened).length;
     const openRate = totalSent ? (totalOpened / totalSent) * 100 : 0;
 
-    // Stats par jour / mois
     const perDayMap = {};
     const perMonthMap = {};
     sends.forEach(e => {
@@ -63,7 +52,6 @@ export default async function handler(req, res) {
     const perDay = Object.entries(perDayMap).map(([date, count]) => ({ date, count }));
     const perMonth = Object.entries(perMonthMap).map(([date, count]) => ({ date, count }));
 
-    // Stats A/B
     const variantMap = {};
     sends.forEach(e => {
       const v = e.variant || "A";
@@ -78,10 +66,9 @@ export default async function handler(req, res) {
       openRate: stats.totalSent ? (stats.totalOpened / stats.totalSent) * 100 : 0
     }));
 
-    return res.status(200).json({ totalSent, totalOpened, openRate, perDay, perMonth, variants });
-
+    return new Response(JSON.stringify({ totalSent, totalOpened, openRate, perDay, perMonth, variants }), { status: 200 });
   } catch (err) {
     console.error("API /stats error:", err);
-    return res.status(500).json({ error: "Internal server error", detail: String(err) });
+    return new Response(JSON.stringify({ error: "Internal server error", detail: String(err) }), { status: 500 });
   }
 }
