@@ -10,7 +10,10 @@ export async function GET(req) {
     const token = authHeader.split(" ")[1];
     const supabase = createRouteHandlerClient({ headers: { authorization: authHeader } });
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+   const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized", detail: userError?.message }), { status: 401 });
+    }
 
     if (userError || !user) {
       return new Response(
@@ -61,14 +64,7 @@ export async function GET(req) {
     return new Response(JSON.stringify({ totalSent, totalOpened, openRate, variants: variantStats }), { status: 200 });
 
   } catch (err) {
-    console.error("Stats API error:", err);
-
-    // ✅ transforme l'erreur en string lisible pour JSON
-    const detail = err instanceof Error ? err.message : JSON.stringify(err, Object.getOwnPropertyNames(err));
-
-    return new Response(
-      JSON.stringify({ error: "Internal server error", detail }),
-      { status: 500 }
-    );
+    const detail = err instanceof Error ? err.message : JSON.stringify(err);
+    return new Response(JSON.stringify({ error: "Internal server error", detail }), { status: 500 });
   }
 }
