@@ -1,163 +1,50 @@
 "use client";
 import { useEffect, useState } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-  ResponsiveContainer,
-} from "recharts";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import useSubscription from "@/app/lib/useSubscription";
+import { createClient } from "@supabase/supabase-js";
 
-interface StatsData {
-  totalSent: number;
-  totalOpened: number;
-  openRate: number;
-  perDay: { date: string; count: number }[];
-  perMonth?: { date: string; count: number }[];
-  variants: { variant: string; totalSent: number; totalOpened: number; openRate: number }[];
-}
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+);
 
 export default function DataCenterPage() {
-  const [stats, setStats] = useState<StatsData | null>(null);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState("jour");
-  const { abonnementActif, type_Abonnement } = useSubscription();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchStats = async () => {
       try {
+        // récupère la session active
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error("Pas de session");
+
+        // fetch API avec Bearer token
         const res = await fetch("/api/events/stats", {
-          method: "GET",
-          credentials: "include",
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         });
-        if (res.status === 401) throw new Error("Non autorisé");
+
+        if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
         setStats(data);
-      } catch (e) {
-        console.error("Erreur récupération des données :", e);
+      } catch (err) {
+        console.error("Erreur stats:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+
+    fetchStats();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="screen center loading">
-        <p>Loading ... </p>
-      </div>
-    );
-  }
-
-  const abonnementsAutorises = ["ultimate"];
-  if (!abonnementActif || !abonnementsAutorises.includes(type_Abonnement)) {
-    return (
-      <div className="max-w-xl mx-auto py-20 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">🔒 Accès réservé</h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-4">
-          Cette fonctionnalité est réservée aux utilisateurs Ultimate.
-        </p>
-        <p className="text-2xl text-yellow-400 dark:text-yellow-400 mt-5 py-25 text-center">
-          <strong>Ultimate subscription</strong>.
-        </p>
-        <a
-          href="/dashboard/billing"
-          className="inline-block mt-6 bg-pink-500 hover:bg-pink-600 text-white font-semibold py-2 px-4 rounded-lg shadow"
-        >
-          Unlock the datacenter NOW !
-        </a>
-      </div>
-    );
-  }
-
-  if (!stats) {
-    return (
-      <div className="screen center error">
-        <p>Impossible de récupérer les données. 😢</p>
-      </div>
-    );
-  }
+  if (loading) return <p>Chargement...</p>;
+  if (!stats) return <p>Impossible de récupérer les stats 😢</p>;
 
   return (
-    <div className="screen content space-y-10">
-      <h2 className="text-3xl font-bold mb-6">📊 Centre de Données Personnel</h2>
-
-      {/* Carte spéciale : meilleure journée */}
-      <Card className="bg-gradient-to-br from-indigo-500 to-purple-700 text-white shadow-lg">
-        <CardContent className="py-6">
-          <h3 className="text-xl font-semibold">🔥 Meilleure journée d’envoi</h3>
-          <p className="text-4xl font-bold mt-2">
-            {stats.perDay?.sort((a, b) => b.count - a.count)[0]?.count ?? 0} emails
-          </p>
-          <p className="text-sm opacity-80">
-            Le {stats.perDay?.sort((a, b) => b.count - a.count)[0]?.date}
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Statistiques principales */}
-      <div className="grid md:grid-cols-3 gap-6">
-        {[
-          { label: "Emails envoyés", value: stats.totalSent },
-          { label: "Emails ouverts", value: stats.totalOpened },
-          { label: "Taux d’ouverture", value: `${stats.openRate.toFixed(2)}%` },
-        ].map((item, idx) => (
-          <Card key={idx} className="shadow-md">
-            <CardContent className="p-6">
-              <h3 className="text-gray-600 text-sm font-medium dark:text-gray-300">{item.label}</h3>
-              <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">{item.value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Tabs pour les graphes */}
-      <Tabs defaultValue="jour" onValueChange={setTab}>
-        <TabsList>
-          <TabsTrigger value="jour">📅 Par jour</TabsTrigger>
-          <TabsTrigger value="mois">📆 Par mois</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      <Card className="bg-zinc-900 text-white">
-        <CardContent className="p-6">
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={tab === "jour" ? stats.perDay : stats.perMonth ?? []}>
-              <CartesianGrid stroke="#444" strokeDasharray="3 3" />
-              <XAxis dataKey="date" stroke="#fff" />
-              <YAxis stroke="#fff" />
-              <Tooltip contentStyle={{ backgroundColor: "#222", borderColor: "#888" }} />
-              <Line type="monotone" dataKey="count" stroke="#FF6A6A" strokeWidth={3} dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
-
-      {/* Variants */}
-      {stats.variants.length > 0 && (
-        <div className="grid md:grid-cols-3 gap-6">
-          {stats.variants.map((v) => (
-            <Card key={v.variant} className="shadow-md">
-              <CardContent className="p-6">
-                <h3 className="text-gray-600 text-sm font-medium dark:text-gray-300">
-                  Variante {v.variant}
-                </h3>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white mt-2">
-                  {v.totalSent} env.
-                </p>
-                <p className="text-sm opacity-80">Ouverts : {v.totalOpened}</p>
-                <p className="text-sm opacity-80">Taux : {v.openRate.toFixed(2)}%</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+    <div>
+      <h1>📊 Centre de Données</h1>
+      <pre>{JSON.stringify(stats, null, 2)}</pre>
     </div>
   );
 }
