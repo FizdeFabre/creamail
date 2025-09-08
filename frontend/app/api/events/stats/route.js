@@ -11,6 +11,8 @@ export async function GET() {
     const rawHeaders = Object.fromEntries(headers().entries());
     const rawCookies = cookies().getAll().map(c => ({ name: c.name, value: c.value }));
 
+console.log("🔍 API /stats headers:", Object.fromEntries(headers().entries()));
+console.log("🔍 API /stats cookies:", cookies().getAll());
     // attempt to read session/user
     const { data: { user }, error: userError } = await supabase.auth.getUser();
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
