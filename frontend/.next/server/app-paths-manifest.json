@@ -1,8 +1,6 @@
 {
-  "/page": "app/page.js",
-  "/api/events/stats/route": "app/api/events/stats/route.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/favicon.ico/route": "app/favicon.ico/route.js",
   "/login/page": "app/login/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/page": "app/page.js",
   "/dashboard/datacenter/page": "app/dashboard/datacenter/page.js"
 }
