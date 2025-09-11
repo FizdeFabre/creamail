@@ -6,6 +6,12 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// === Supabase Client "anon" pour valider JWT ===
+const supabaseAnon = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 // === Types ===
 interface Send {
   id: string;
@@ -42,8 +48,12 @@ export async function GET(request: Request) {
     const token = authHeader?.split(" ")[1];
     if (!token) return new Response(JSON.stringify({ error: "Unauthorized - no token" }), { status: 401 });
 
-    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
-    if (userError || !user) return new Response(JSON.stringify({ error: "Unauthorized", detail: userError?.message }), { status: 401 });
+    // 🔑 Vérif utilisateur avec le client "anon"
+    const { data: { user }, error: userError } = await supabaseAnon.auth.getUser(token);
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: "Unauthorized", detail: userError?.message }), { status: 401 });
+    }
+
     const userId = user.id;
 
     // --- 2. Récupérer les séquences de l'utilisateur ---
@@ -51,6 +61,7 @@ export async function GET(request: Request) {
       .from("email_sequences")
       .select("id, campaign_name")
       .eq("user_id", userId);
+
     if (seqError) throw new Error(seqError.message);
 
     const sequences: Sequence[] = sequencesRaw ?? [];
@@ -80,6 +91,7 @@ export async function GET(request: Request) {
       .from("emails_sent")
       .select("id, sent_at, opened, clicked, responded, variant, sequence_id")
       .in("sequence_id", sequenceIds);
+
     if (sendsError) throw new Error(sendsError.message);
 
     const sends: Send[] = sendsRaw ?? [];
@@ -135,7 +147,6 @@ export async function GET(request: Request) {
       responseRate: stats.totalSent ? (stats.totalResponded / stats.totalSent) * 100 : 0,
     }));
 
-    // Déterminer le gagnant
     const winnerRate = Math.max(...variants.map(v => v.openRate));
     variants.forEach(v => v.isWinner = v.openRate === winnerRate);
 
