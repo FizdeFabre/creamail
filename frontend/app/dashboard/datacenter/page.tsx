@@ -38,32 +38,38 @@ export default function DataCenterPage() {
   const [activeTab, setActiveTab] = useState("jour");
   const supabase = createClientComponentClient();
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) throw new Error("Pas de session active");
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
 
-        const res = await fetch("/api/events/stats", {
-          headers: { Authorization: `Bearer ${session.access_token}` }
-        });
-
-        if (!res.ok) {
-          const errText = await res.text();
-          throw new Error(`Erreur stats: HTTP ${res.status} - ${errText}`);
-        }
-
-        const statsData = await res.json();
-        setStats(statsData);
-      } catch (err) {
-        console.error("Erreur stats:", err);
-      } finally {
-        setLoading(false);
+      if (!session) {
+        console.warn("Pas de session → on redirige vers /login");
+        window.location.href = "/login";
+        return;
       }
-    };
 
-    fetchData();
-  }, []);
+      const res = await fetch("/api/events/stats", {
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error(`Erreur stats: HTTP ${res.status} - ${errText}`);
+      }
+
+      const statsData = await res.json();
+      setStats(statsData);
+    } catch (err) {
+      console.error("Erreur stats:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
+
 
   if (loading) {
     return (
