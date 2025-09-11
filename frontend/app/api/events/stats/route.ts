@@ -46,15 +46,13 @@ export async function GET(request: Request) {
     // --- 1. Récupération utilisateur via JWT ---
     const authHeader = request.headers.get("authorization");
     const token = authHeader?.split(" ")[1];
-    if (!token) return new Response(JSON.stringify({ error: "Unauthorized - no token" }), { status: 401 });
 
-    // 🔑 Vérif utilisateur avec le client "anon"
-    const { data: { user }, error: userError } = await supabaseAnon.auth.getUser(token);
-    if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Unauthorized", detail: userError?.message }), { status: 401 });
+    // --- MODE DEBUG LOCAL ---
+    let userId = process.env.DEBUG_USER_ID || "DEBUG_USER"; // fallback dev
+    if (token) {
+      const { data: { user }, error: userError } = await supabaseAnon.auth.getUser(token);
+      if (!userError && user) userId = user.id;
     }
-
-    const userId = user.id;
 
     // --- 2. Récupérer les séquences de l'utilisateur ---
     const { data: sequencesRaw, error: seqError } = await supabaseAdmin
