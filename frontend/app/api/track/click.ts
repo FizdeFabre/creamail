@@ -1,29 +1,23 @@
-import { NextApiRequest, NextApiResponse } from "next";
-import { createClient } from "@supabase/supabase-js";
+// /api/track/click.ts
+import { supabase } from "@/lib/supabaseClient";
 
-const supabaseAdmin = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const emailId = url.searchParams.get("emailId");
+  const target = url.searchParams.get("url");
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { emailId, url } = req.query;
-
-  if (!emailId || typeof emailId !== "string" || !url || typeof url !== "string") {
-    return res.status(400).send("Invalid parameters");
-  }
-
-  try {
-    // Marque le clic
-    await supabaseAdmin
+  if (emailId && target) {
+    // Marque le clic dans Supabase
+    await supabase
       .from("emails_sent")
-      .update({ clicked: true })
+      .update({ clicked: true, clicked_at: new Date().toISOString() })
       .eq("id", emailId);
 
     // Redirige vers le lien réel
-    res.redirect(url);
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Internal server error");
+    return new Response(null, {
+      status: 302,
+      headers: { Location: target },
+    });
   }
+  return new Response("Invalid request", { status: 400 });
 }
