@@ -1,11 +1,6 @@
 // app/api/track/open/[id]/route.ts
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(
   req: Request,
@@ -19,7 +14,7 @@ export async function GET(
     }
 
     // Mise à jour : opened = true
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from("emails_sent")
       .update({ opened: true })
       .eq("id", emailId);
