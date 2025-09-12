@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { Card, CardContent } from "@/components/ui/card";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface Variant {
   variant: string;
@@ -21,8 +22,6 @@ interface StatsData {
   openRate: number;
   responseRate: number;
   perDay: { date: string; count: number }[];
-  perMonth: { date: string; count: number }[];
-  perHour: { hour: string; count: number }[];
   variants: Variant[];
   bestCampaign: { campaign: string; rate: number } | null;
   worstCampaign: { campaign: string; rate: number } | null;
@@ -36,22 +35,18 @@ export default function DataCenterPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // 1️⃣ Récupérer l'utilisateur connecté
         const { data: { user }, error: userError } = await supabase.auth.getUser();
         if (userError || !user) {
-          console.warn("Pas de session → redirection login ?");
           window.location.href = "/login";
           return;
         }
         const userId = user.id;
 
-        // 2️⃣ Récupérer les séquences
-        const { data: sequencesRaw, error: seqError } = await supabase
+        // Séquences
+        const { data: sequencesRaw } = await supabase
           .from("email_sequences")
           .select("id, campaign_name")
           .eq("user_id", userId);
-        if (seqError) throw seqError;
-
         const sequences = sequencesRaw || [];
         const sequenceIds = sequences.map(s => s.id);
         if (!sequenceIds.length) {
@@ -62,8 +57,6 @@ export default function DataCenterPage() {
             openRate: 0,
             responseRate: 0,
             perDay: [],
-            perMonth: [],
-            perHour: [],
             variants: [],
             bestCampaign: null,
             worstCampaign: null,
@@ -72,23 +65,21 @@ export default function DataCenterPage() {
           return;
         }
 
-        // 3️⃣ Récupérer tous les emails envoyés
-        const { data: sendsRaw, error: sendsError } = await supabase
+        // Emails envoyés
+        const { data: sendsRaw } = await supabase
           .from("emails_sent")
           .select("id, sent_at, opened, clicked, responded, variant, sequence_id")
           .in("sequence_id", sequenceIds);
-        if (sendsError) throw sendsError;
-
         const sends = sendsRaw || [];
 
-        // 4️⃣ Calculer les métriques globales
+        // Métriques globales
         const totalSent = sends.length;
         const totalOpened = sends.filter(e => e.opened).length;
         const totalResponded = sends.filter(e => e.responded).length;
         const openRate = totalSent ? (totalOpened / totalSent) * 100 : 0;
         const responseRate = totalSent ? (totalResponded / totalSent) * 100 : 0;
 
-        // 5️⃣ Variants A/B
+        // Variants A/B
         const variantMap: Record<string, { totalSent: number; totalOpened: number; totalResponded: number }> = {};
         sends.forEach(e => {
           const v = e.variant || "A";
@@ -97,7 +88,6 @@ export default function DataCenterPage() {
           if (e.opened) variantMap[v].totalOpened++;
           if (e.responded) variantMap[v].totalResponded++;
         });
-
         const variants: Variant[] = Object.entries(variantMap).map(([variant, stats]) => ({
           variant,
           ...stats,
@@ -107,21 +97,19 @@ export default function DataCenterPage() {
         const winnerRate = Math.max(...variants.map(v => v.openRate));
         variants.forEach(v => v.isWinner = v.openRate === winnerRate);
 
-        // 6️⃣ Best / Worst Campaign
+        // Best / Worst Campaign
         let bestCampaign: { campaign: string; rate: number } | null = null;
         let worstCampaign: { campaign: string; rate: number } | null = null;
-
         sequences.forEach(seq => {
           const seqSends = sends.filter(e => e.sequence_id === seq.id);
           const opened = seqSends.filter(e => e.opened).length;
           const sent = seqSends.length;
           const rate = sent ? (opened / sent) * 100 : 0;
-
           if (!bestCampaign || rate > bestCampaign.rate) bestCampaign = { campaign: seq.campaign_name, rate };
           if (!worstCampaign || rate < worstCampaign.rate) worstCampaign = { campaign: seq.campaign_name, rate };
         });
 
-        // 7️⃣ Résumé
+        // Par jour
         const perDayMap: Record<string, number> = {};
         sends.forEach(e => {
           if (!e.sent_at) return;
@@ -134,7 +122,6 @@ export default function DataCenterPage() {
           ? `Ton meilleur jour est le ${bestDay.date} avec ${bestDay.count} ouvertures.`
           : "Pas assez de données pour générer un résumé.";
 
-        // 8️⃣ Mettre à jour le state
         setStats({
           totalSent,
           totalOpened,
@@ -142,8 +129,6 @@ export default function DataCenterPage() {
           openRate,
           responseRate,
           perDay,
-          perMonth: [],
-          perHour: [],
           variants,
           bestCampaign,
           worstCampaign,
@@ -165,12 +150,42 @@ export default function DataCenterPage() {
 
   return (
     <div className="min-h-screen bg-slate-900 p-6">
-      <h1 className="text-3xl font-bold text-white mb-6">Data Center</h1>
+      <h1 className="text-4xl font-bold text-white mb-6">Data Center</h1>
       <p className="text-slate-400 mb-6">{stats.summary}</p>
-      <div className="grid md:grid-cols-3 gap-6">
+
+      <div className="grid md:grid-cols-3 gap-6 mb-10">
         <Card><CardContent>Total envoyés: {stats.totalSent}</CardContent></Card>
         <Card><CardContent>Ouverts: {stats.totalOpened}</CardContent></Card>
         <Card><CardContent>Taux ouverture: {stats.openRate.toFixed(1)}%</CardContent></Card>
+      </div>
+
+      <h2 className="text-2xl font-semibold text-white mb-4">Activité par jour</h2>
+      <Card className="mb-10">
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={stats.perDay}>
+              <CartesianGrid stroke="#444" />
+              <XAxis dataKey="date" stroke="#fff" />
+              <YAxis stroke="#fff" />
+              <Tooltip />
+              <Line type="monotone" dataKey="count" stroke="#4f46e5" strokeWidth={2} />
+            </LineChart>
+          </ResponsiveContainer>
+        </CardContent>
+      </Card>
+
+      <h2 className="text-2xl font-semibold text-white mb-4">Variants A/B</h2>
+      <div className="grid md:grid-cols-variants gap-4">
+        {stats.variants.map(v => (
+          <Card key={v.variant} className={`border ${v.isWinner ? 'border-green-400' : 'border-gray-700'}`}>
+            <CardContent>
+              <h3 className="text-lg font-bold text-white mb-2">{v.variant} {v.isWinner ? '🏆' : ''}</h3>
+              <p className="text-slate-400">Envoyés: {v.totalSent}</p>
+              <p className="text-slate-400">Ouverts: {v.totalOpened} ({v.openRate.toFixed(1)}%)</p>
+              <p className="text-slate-400">Réponses: {v.totalResponded} ({v.responseRate.toFixed(1)}%)</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );
