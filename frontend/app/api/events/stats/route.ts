@@ -1,13 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 
-// === Supabase Clients ===
-// ⚠️ Service Role uniquement côté backend
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// Anon client pour valider le JWT
 const supabaseAnon = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -27,8 +24,8 @@ interface Variant {
   variant: string;
   totalSent: number;
   totalOpened: number;
-  totalClicked: number;
   totalResponded: number;
+  totalClicked: number;
   openRate: number;
   clickRate: number;
   responseRate: number;
@@ -42,22 +39,22 @@ interface Sequence {
 
 export async function GET(request: Request) {
   try {
-    // --- 1. Authentification ---
+    // --- 1. Récupération JWT depuis le header ---
     const authHeader = request.headers.get("authorization");
-    if (!authHeader) {
+    const token = authHeader?.split(" ")[1];
+    if (!token) {
       return new Response(JSON.stringify({ error: "Unauthorized - no token" }), { status: 401 });
     }
 
-    const token = authHeader.split(" ")[1];
+    // --- 2. Vérification de l'utilisateur ---
     const { data: { user }, error: userError } = await supabaseAnon.auth.getUser(token);
-
     if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized", detail: userError?.message }), { status: 401 });
     }
 
     const userId = user.id;
 
-    // --- 2. Récupérer les séquences ---
+    // --- 3. Récupérer les séquences ---
     const { data: sequencesRaw, error: seqError } = await supabaseAdmin
       .from("email_sequences")
       .select("id, campaign_name")
@@ -70,24 +67,15 @@ export async function GET(request: Request) {
 
     if (!sequenceIds.length) {
       return new Response(JSON.stringify({
-        totalSent: 0,
-        totalOpened: 0,
-        totalClicked: 0,
-        totalResponded: 0,
-        openRate: 0,
-        clickRate: 0,
-        responseRate: 0,
-        perDay: [],
-        perMonth: [],
-        perHour: [],
-        variants: [],
-        bestCampaign: null,
-        worstCampaign: null,
+        totalSent: 0, totalOpened: 0, totalClicked: 0, totalResponded: 0,
+        openRate: 0, clickRate: 0, responseRate: 0,
+        perDay: [], perMonth: [], perHour: [], variants: [],
+        bestCampaign: null, worstCampaign: null,
         summary: "Aucune campagne trouvée pour cet utilisateur."
       }), { status: 200 });
     }
 
-    // --- 3. Emails envoyés ---
+    // --- 4. Récupérer les emails ---
     const { data: sendsRaw, error: sendsError } = await supabaseAdmin
       .from("emails_sent")
       .select("id, sent_at, opened, clicked, responded, variant, sequence_id")
@@ -97,7 +85,7 @@ export async function GET(request: Request) {
 
     const sends: Send[] = sendsRaw ?? [];
 
-    // --- 4. Calcul global ---
+    // --- 5. Calcul métriques globales ---
     const totalSent = sends.length;
     const totalOpened = sends.filter(e => e.opened).length;
     const totalClicked = sends.filter(e => e.clicked).length;
@@ -106,7 +94,7 @@ export async function GET(request: Request) {
     const clickRate = totalSent ? (totalClicked / totalSent) * 100 : 0;
     const responseRate = totalSent ? (totalResponded / totalSent) * 100 : 0;
 
-    // --- 5. Stats temporelles ---
+    // --- 6. PerDay / PerMonth / PerHour ---
     const perDayMap: Record<string, number> = {};
     const perMonthMap: Record<string, number> = {};
     const perHourMap: Record<string, number> = {};
@@ -129,7 +117,7 @@ export async function GET(request: Request) {
     const perMonth = Object.entries(perMonthMap).map(([date, count]) => ({ date, count }));
     const perHour = Object.entries(perHourMap).map(([hour, count]) => ({ hour, count }));
 
-    // --- 6. Variants ---
+    // --- 7. Variants ---
     const variantMap: Record<string, { totalSent: number; totalOpened: number; totalClicked: number; totalResponded: number }> = {};
     sends.forEach(e => {
       const v = e.variant || "A";
@@ -151,7 +139,7 @@ export async function GET(request: Request) {
     const winnerRate = Math.max(...variants.map(v => v.openRate));
     variants.forEach(v => v.isWinner = v.openRate === winnerRate);
 
-    // --- 7. Best / Worst campaigns ---
+    // --- 8. Best/Worst campaign ---
     let bestCampaign: { campaign: string; rate: number } | null = null;
     let worstCampaign: { campaign: string; rate: number } | null = null;
 
@@ -165,27 +153,15 @@ export async function GET(request: Request) {
       if (!worstCampaign || rate < worstCampaign.rate) worstCampaign = { campaign: seq.campaign_name, rate };
     });
 
-    // --- 8. Résumé ---
-    const bestDay = perDay.sort((a, b) => b.count - a.count)[0];
-    const summary = bestDay
-      ? `Ton meilleur jour est le ${bestDay.date} avec ${bestDay.count} envois.`
-      : "Pas assez de données pour générer un résumé.";
+    // --- 9. Résumé ---
+    const bestDay = perDay.sort((a,b) => b.count - a.count)[0];
+    const summary = bestDay ? `Ton meilleur jour est le ${bestDay.date} avec ${bestDay.count} ouvertures.` : "Pas assez de données.";
 
     return new Response(JSON.stringify({
-      totalSent,
-      totalOpened,
-      totalClicked,
-      totalResponded,
-      openRate,
-      clickRate,
-      responseRate,
-      perDay,
-      perMonth,
-      perHour,
-      variants,
-      bestCampaign,
-      worstCampaign,
-      summary
+      totalSent, totalOpened, totalClicked, totalResponded,
+      openRate, clickRate, responseRate,
+      perDay, perMonth, perHour,
+      variants, bestCampaign, worstCampaign, summary
     }), { status: 200 });
 
   } catch (err: unknown) {

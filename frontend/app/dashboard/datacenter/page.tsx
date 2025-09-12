@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Card, CardContent } from "@/components/ui/card";
-import { supabase } from "@/lib/supabaseClient";
 
 interface Variant {
   variant: string;
@@ -32,20 +32,26 @@ interface StatsData {
 export default function DataCenterPage() {
   const [stats, setStats] = useState<StatsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const supabase = createClientComponentClient();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchStats = async () => {
       try {
-        // 🟢 Ici on ne demande PAS de session
-        // On tape direct ton API backend qui utilise DEBUG_USER_ID si besoin
-        const res = await fetch("/api/events/stats");
-
-        if (!res.ok) {
-          throw new Error(`Erreur stats HTTP ${res.status}: ${await res.text()}`);
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        if (!session) {
+          window.location.href = "/login";
+          return;
         }
 
-        const statsData = await res.json();
-        setStats(statsData);
+        const res = await fetch("/api/events/stats", {
+          headers: { Authorization: `Bearer ${session.access_token}` }
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+
+        const data = await res.json();
+        setStats(data);
 
       } catch (err) {
         console.error("Erreur stats:", err);
@@ -54,16 +60,11 @@ export default function DataCenterPage() {
       }
     };
 
-    fetchData();
-  }, []);
+    fetchStats();
+  }, [supabase]);
 
-  if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
-  }
-
-  if (!stats) {
-    return <div className="min-h-screen flex items-center justify-center">Pas de données disponibles.</div>;
-  }
+  if (loading) return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
+  if (!stats) return <div className="min-h-screen flex items-center justify-center">Pas de données disponibles.</div>;
 
   return (
     <div className="min-h-screen bg-slate-900 p-6">
