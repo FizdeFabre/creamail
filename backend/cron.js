@@ -27,7 +27,7 @@ export async function processOnce(batchSize = 50) {
   const now = new Date().toISOString();
 
   const { data: sequences, error: seqError } = await supabaseAdmin
-    .from("email_sequences")
+    .from("email_sequences")  
     .select("*")
     .lte("scheduled_at", now)
     .eq("status", "pending");
@@ -69,9 +69,9 @@ export async function processOnce(batchSize = 50) {
           .single();
 
         if (!inserted) return;
-
-        const pixelUrl = `https://tondomaine.com/api/open?id=${inserted.id}`;
-        const html = `${sequence.body}<br><img src="${pixelUrl}" width="1" height="1" />`;
+        
+const pixelUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/api/open?id=${inserted.id}`;
+const html = `${sequence.body}<br><img src="${pixelUrl}" width="1" height="1" style="display:none;" />`;
 
         try {
           await transporter.sendMail({
