@@ -3,13 +3,13 @@ import { supabase } from "@/lib/supabaseClient";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
+  const id = searchParams.get("sequence_id");
   if (!id) return new Response("Missing id", { status: 400 });
 
   const { error } = await supabase
     .from("emails_sent")
     .update({ opened: true })
-    .eq("id", id);
+    .eq("sequence_id", id);
 
   if (error) return new Response("DB error", { status: 500 });
 
