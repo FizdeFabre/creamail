@@ -25,7 +25,6 @@ type SequenceRecipient = {
   to_email: string;
 };
 
-
 export default function Dashboard() {
   const [sequences, setSequences] = useState<Sequence[]>([]);
   const [sortOption, setSortOption] = useState("created_desc");
@@ -39,18 +38,14 @@ export default function Dashboard() {
   const [errorMsg, setErrorMsg] = useState("");
   const router = useRouter();
 
-
   const { type_Abonnement, loading: subLoading } = useSubscription();
 
   const getMaxSequences = () => {
     switch (type_Abonnement) {
-      case "premium":
-        return 60;
-      case "ultimate":
-        return Infinity;
+      case "premium": return 60;
+      case "ultimate": return Infinity;
       case "gratuit":
-      default:
-        return 2;
+      default: return 2;
     }
   };
 
@@ -59,10 +54,7 @@ export default function Dashboard() {
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user }, error } = await supabase.auth.getUser();
-      if (error || !user) {
-        router.replace("/login");
-        return;
-      }
+      if (error || !user) { router.replace("/login"); return; }
       setUserId(user.id);
     };
     fetchUser();
@@ -74,7 +66,6 @@ export default function Dashboard() {
 
   const loadSequences = async (uid: string, sort: string) => {
     setLoading(true);
-
     let query = supabase
       .from("email_sequences")
       .select(`
@@ -86,9 +77,7 @@ export default function Dashboard() {
         status,
         scheduled_at,
         recurrence,
-        sequence_recipients:sequence_recipients (
-          to_email
-        )
+        sequence_recipients:sequence_recipients(to_email)
       `)
       .eq("user_id", uid);
 
@@ -99,24 +88,15 @@ export default function Dashboard() {
     }
 
     const { data, error } = await query;
+    if (error) { setLoading(false); return; }
+    if (!data || data.length === 0) { setSequences([]); setLoading(false); return; }
 
-    if (error) {
-      setLoading(false);
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      setSequences([]);
-      setLoading(false);
-      return;
-    }
-
-    const formatted: Sequence[] = data.map((seq: any) => {
-      const recipients = Array.isArray(seq.sequence_recipients)
+    const formatted: Sequence[] = data.map((seq: any) => ({
+      ...seq,
+      to_email: Array.isArray(seq.sequence_recipients)
         ? seq.sequence_recipients.map((r: any) => r.to_email)
-        : [];
-      return { ...seq, to_email: recipients };
-    });
+        : [],
+    }));
 
     const finalSorted = ["email_asc", "email_desc"].includes(sort)
       ? sortSequencesClientSide(formatted, sort)
@@ -131,12 +111,9 @@ export default function Dashboard() {
       const emailA = (a.to_email[0] || "").toLowerCase();
       const emailB = (b.to_email[0] || "").toLowerCase();
       switch (option) {
-        case "email_asc":
-          return emailA.localeCompare(emailB);
-        case "email_desc":
-          return emailB.localeCompare(emailA);
-        default:
-          return 0;
+        case "email_asc": return emailA.localeCompare(emailB);
+        case "email_desc": return emailB.localeCompare(emailA);
+        default: return 0;
       }
     });
   };
@@ -145,83 +122,79 @@ export default function Dashboard() {
     if (!confirm("Delete this sequence?")) return;
     const { error } = await supabase.from("email_sequences").delete().eq("id", id);
     if (!error) {
-      setSequences((prev) => prev.filter((s) => s.id !== id));
+      setSequences(prev => prev.filter(s => s.id !== id));
       setErrorMsg("Sequence deleted!");
       setTimeout(() => setErrorMsg(""), 3000);
     }
   };
 
-const handleDuplicate = async (id: string) => {
-  if (!canCreateSequence) {
-    setErrorMsg("Limit reached for your subscription. Cannot duplicate.");
-    setTimeout(() => setErrorMsg(""), 3000);
-    return;
-  }
-
-  // Récupère la séquence existante avec ses recipients
-  const { data, error } = await supabase
-    .from("email_sequences")
-    .select("*, sequence_recipients(to_email)")
-    .eq("id", id)
-    .single();
-
-  if (error || !data) return;
-
-  const { subject, body, recurrence, scheduled_at, sequence_recipients } = data;
-
-  // Convertit scheduled_at pour PostgreSQL
-  const isoDate = scheduled_at ? toPostgresTimestamp(scheduled_at) : null;
-
-  // Crée la nouvelle séquence
-  const { data: newSequence, error: insertError } = await supabase
-    .from("email_sequences")
-    .insert({
-      subject: subject + " (copy)",
-      body,
-      recurrence,
-      scheduled_at: isoDate,
-      user_id: userId,
-      created_at: new Date().toISOString(),
-    })
-    .select()
-    .single();
-
-  if (insertError || !newSequence?.id) {
-    console.error("Failed to create new sequence", insertError);
-    return;
-  }
-
-  // Insère les recipients liés à la nouvelle séquence
-  const recipientInserts = (sequence_recipients || []).map((r: SequenceRecipient) => ({
-    sequence_id: newSequence.id,
-    to_email: r.to_email,
-  }));
-
-  if (recipientInserts.length > 0) {
-    const { error: recipientsError } = await supabase
-      .from("sequence_recipients")
-      .insert(recipientInserts);
-
-    if (recipientsError) {
-      console.error("Recipient error:", recipientsError);
-      setErrorMsg("⚠️ Recipient error: " + recipientsError.message);
+  const handleDuplicate = async (id: string) => {
+    if (!canCreateSequence) {
+      setErrorMsg("Limit reached for your subscription. Cannot duplicate.");
+      setTimeout(() => setErrorMsg(""), 3000);
       return;
     }
-  }
 
-  // Recharge les sequences
-  if (userId) loadSequences(userId, sortOption);
-};
+    // 1️⃣ Récupère la séquence avec ses recipients
+    const { data, error } = await supabase
+      .from("email_sequences")
+      .select("*, sequence_recipients(to_email)")
+      .eq("id", id)
+      .single();
 
-const handleEdit = (sequence: Sequence) => {
-setEditData({
-  ...sequence,
-  // Ne reconvertis pas une date déjà en UTC depuis la DB
-scheduled_at: sequence.scheduled_at,
-});
+    if (error || !data) return;
 
-  setShowEditDialog(true);
-};
+    const { subject, body, recurrence, scheduled_at, sequence_recipients } = data;
+    const isoDate = scheduled_at ? toPostgresTimestamp(scheduled_at) : null;
+
+    // 2️⃣ Crée la nouvelle séquence et récupère bien l'ID
+const { data: newSequence, error: insertError } = await supabase
+  .from("email_sequences")
+  .insert({
+    subject: subject + " (copy)",
+    body,
+    recurrence,
+    scheduled_at: isoDate,
+    user_id: userId,
+    created_at: new Date().toISOString(),
+  })
+  .select("id")
+  .single();
+    
+    if (insertError || !newSequence?.id) {
+      console.error("Failed to create new sequence", insertError);
+      return;
+    }
+
+    // 3️⃣ Insère les recipients avec le bon sequence_id
+    const recipientInserts = (sequence_recipients || []).map((r: SequenceRecipient) => ({
+      sequence_id: newSequence.id,
+      to_email: r.to_email,
+    }));
+
+    if (recipientInserts.length > 0) {
+      const { error: recipientsError } = await supabase
+        .from("sequence_recipients")
+        .insert(recipientInserts);
+
+      if (recipientsError) {
+        console.error("Recipient error:", recipientsError);
+        setErrorMsg("⚠️ Recipient error: " + recipientsError.message);
+        return;
+      }
+    }
+
+    // 4️⃣ Recharge la liste
+    if (userId) loadSequences(userId, sortOption);
+  };
+
+  const handleEdit = (sequence: Sequence) => {
+    setEditData({
+      ...sequence,
+      scheduled_at: sequence.scheduled_at,
+    });
+    setShowEditDialog(true);
+  };
 
   return (
     <div className="max-w-6xl mx-auto py-12 px-6">
