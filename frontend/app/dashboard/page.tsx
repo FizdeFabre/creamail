@@ -16,8 +16,9 @@ interface Sequence {
   body: string;
   to_email: string[];
   recurrence: string;
-   scheduled_at: string | null; // <-- là, string ou null
+  scheduled_at: string | null;
   user_id: string;
+  status: string;
 }
 
 type SequenceRecipient = {
@@ -201,7 +202,7 @@ const handleEdit = (sequence: Sequence) => {
 setEditData({
   ...sequence,
   // Ne reconvertis pas une date déjà en UTC depuis la DB
-  scheduled_at: sequence.scheduled_at ?? new Date().toISOString(),
+scheduled_at: sequence.scheduled_at,
 });
 
   setShowEditDialog(true);
