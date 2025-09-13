@@ -151,13 +151,14 @@ export default function Dashboard() {
     }
   };
 
- const handleDuplicate = async (id: string) => {
+const handleDuplicate = async (id: string) => {
   if (!canCreateSequence) {
     setErrorMsg("Limit reached for your subscription. Cannot duplicate.");
     setTimeout(() => setErrorMsg(""), 3000);
     return;
   }
 
+  // Récupère la séquence existante avec ses recipients
   const { data, error } = await supabase
     .from("email_sequences")
     .select("*, sequence_recipients(to_email)")
@@ -168,9 +169,10 @@ export default function Dashboard() {
 
   const { subject, body, recurrence, scheduled_at, sequence_recipients } = data;
 
-  // ⚡ Convert scheduled_at correctement pour PostgreSQL
-  const isoDate = toPostgresTimestamp(scheduled_at);
+  // Convertit scheduled_at pour PostgreSQL
+  const isoDate = scheduled_at ? toPostgresTimestamp(scheduled_at) : null;
 
+  // Crée la nouvelle séquence
   const { data: newSequence, error: insertError } = await supabase
     .from("email_sequences")
     .insert({
@@ -184,17 +186,30 @@ export default function Dashboard() {
     .select()
     .single();
 
-  if (insertError || !newSequence) return;
+  if (insertError || !newSequence?.id) {
+    console.error("Failed to create new sequence", insertError);
+    return;
+  }
 
+  // Insère les recipients liés à la nouvelle séquence
   const recipientInserts = (sequence_recipients || []).map((r: SequenceRecipient) => ({
     sequence_id: newSequence.id,
     to_email: r.to_email,
   }));
 
   if (recipientInserts.length > 0) {
-    await supabase.from("sequence_recipients").insert(recipientInserts);
+    const { error: recipientsError } = await supabase
+      .from("sequence_recipients")
+      .insert(recipientInserts);
+
+    if (recipientsError) {
+      console.error("Recipient error:", recipientsError);
+      setErrorMsg("⚠️ Recipient error: " + recipientsError.message);
+      return;
+    }
   }
 
+  // Recharge les sequences
   if (userId) loadSequences(userId, sortOption);
 };
 
