@@ -139,7 +139,7 @@ export default function Dashboard() {
     const { data, error } = await supabase
       .from("email_sequences")
       .select("*, sequence_recipients(to_email)")
-      .eq("id", id)
+      .eq("sequence_id", id)
       .single();
 
     if (error || !data) return;
