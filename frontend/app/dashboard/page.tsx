@@ -10,7 +10,7 @@ import { formatUtcToLocal } from "@/app/lib/dateUtils";
 import { toPostgresTimestamp } from "@/app/lib/dateUtils";
 
 interface Sequence {
-  id: string;
+  sequence_id: string;   // ⬅️ remplacer id par sequence_id
   created_at: string;
   subject: string;
   body: string;
@@ -67,19 +67,19 @@ export default function Dashboard() {
   const loadSequences = async (uid: string, sort: string) => {
     setLoading(true);
     let query = supabase
-      .from("email_sequences")
-      .select(`
-        id,
-        created_at,
-        body,
-        subject,
-        user_id,
-        status,
-        scheduled_at,
-        recurrence,
-        sequence_recipients:sequence_recipients(to_email)
-      `)
-      .eq("user_id", uid);
+  .from("email_sequences")
+  .select(`
+    sequence_id,
+    created_at,
+    body,
+    subject,
+    user_id,
+    status,
+    scheduled_at,
+    recurrence,
+    sequence_recipients:sequence_recipients(to_email)
+  `)
+  .eq("user_id", uid);
 
     if (sort === "created_asc" || sort === "created_desc") {
       query = query.order("created_at", { ascending: sort === "created_asc" });
@@ -120,12 +120,12 @@ export default function Dashboard() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this sequence?")) return;
-    const { error } = await supabase.from("email_sequences").delete().eq("id", id);
-    if (!error) {
-      setSequences(prev => prev.filter(s => s.id !== id));
-      setErrorMsg("Sequence deleted!");
-      setTimeout(() => setErrorMsg(""), 3000);
-    }
+    const { error } = await supabase.from("email_sequences").delete().eq("sequence_id", id);
+if (!error) {
+  setSequences(prev => prev.filter(s => s.sequence_id !== id));
+        setErrorMsg("Sequence deleted!");
+        setTimeout(() => setErrorMsg(""), 3000);
+      }
   };
 
   const handleDuplicate = async (id: string) => {
@@ -158,19 +158,19 @@ const { data: newSequence, error: insertError } = await supabase
     user_id: userId,
     created_at: new Date().toISOString(),
   })
-  .select("id")
+  .select("sequence_id")   // 👈 récupérer sequence_id
   .single();
-    
-    if (insertError || !newSequence?.id) {
-      console.error("Failed to create new sequence", insertError);
-      return;
-    }
 
-    // 3️⃣ Insère les recipients avec le bon sequence_id
-    const recipientInserts = (sequence_recipients || []).map((r: SequenceRecipient) => ({
-      sequence_id: newSequence.id,
-      to_email: r.to_email,
-    }));
+if (insertError || !newSequence?.sequence_id) {
+  console.error("Failed to create new sequence", insertError);
+  return;
+}
+
+// 👇 Utiliser sequence_id et pas id
+const recipientInserts = (sequence_recipients || []).map((r: SequenceRecipient) => ({
+  sequence_id: newSequence.sequence_id,
+  to_email: r.to_email,
+}));
 
     if (recipientInserts.length > 0) {
       const { error: recipientsError } = await supabase
@@ -326,7 +326,7 @@ const { data: newSequence, error: insertError } = await supabase
         <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
           {sequences.map((seq) => (
             <li
-              key={seq.id}
+              key={seq.sequence_id}
               onClick={(e) => {
                 if ((e.target as HTMLElement).closest("button")) return;
                 setSelectedSequence(seq);
@@ -359,7 +359,7 @@ const { data: newSequence, error: insertError } = await supabase
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDuplicate(seq.id)}
+                  onClick={() => handleDuplicate(seq.sequence_id)}
                   disabled={!canCreateSequence}
                   className="bg-yellow-500 hover:bg-purple-600 text-white py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -399,9 +399,9 @@ const { data: newSequence, error: insertError } = await supabase
                   const { error } = await supabase
                     .from("email_sequences")
                     .delete()
-                    .eq("id", deleteTarget.id);
+                    .eq("sequence_id", deleteTarget.sequence_id);
                   if (!error) {
-                    setSequences((prev) => prev.filter((s) => s.id !== deleteTarget.id));
+                    setSequences((prev) => prev.filter((s) => s.sequence_id !== deleteTarget.sequence_id));
                     setErrorMsg("Sequence deleted!");
                     setTimeout(() => setErrorMsg(""), 3000);
                   }
