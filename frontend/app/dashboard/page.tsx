@@ -128,6 +128,57 @@ if (!error) {
       }
   };
 
+  const handleCreate = async (newSequence: {
+  subject: string;
+  body: string;
+  recurrence: string;
+  scheduled_at: string | null;
+  to_email: string[];
+}) => {
+  if (!userId) return;
+
+  // 1️⃣ Créer la séquence seule
+  const { data: created, error: seqError } = await supabase
+    .from("email_sequences")
+    .insert({
+      subject: newSequence.subject,
+      body: newSequence.body,
+      recurrence: newSequence.recurrence,
+      scheduled_at: newSequence.scheduled_at,
+      user_id: userId,
+      created_at: new Date().toISOString(),
+    })
+    .select("sequence_id")
+    .single();
+
+  if (seqError || !created) {
+    console.error("Failed to create sequence", seqError);
+    setErrorMsg("Erreur création séquence");
+    return;
+  }
+
+  // 2️⃣ Ajouter les destinataires un par un dans sequence_recipients
+  const recipientInserts = newSequence.to_email.map((email) => ({
+    sequence_id: created.sequence_id,
+    to_email: email,
+  }));
+
+  if (recipientInserts.length > 0) {
+    const { error: recError } = await supabase
+      .from("sequence_recipients")
+      .insert(recipientInserts);
+
+    if (recError) {
+      console.error("Recipient insert error:", recError);
+      setErrorMsg("Erreur destinataires : " + recError.message);
+      return;
+    }
+  }
+
+  // 3️⃣ Recharge la liste
+  loadSequences(userId, sortOption);
+};
+
   const handleDuplicate = async (id: string) => {
     if (!canCreateSequence) {
       setErrorMsg("Limit reached for your subscription. Cannot duplicate.");
