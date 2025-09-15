@@ -22,7 +22,7 @@ interface Sequence {
 }
 
 type SequenceRecipient = {
-  to_email: string [] | string;
+  to_email: string [];
 };
 
 export default function Dashboard() {
@@ -91,12 +91,12 @@ export default function Dashboard() {
     if (error) { setLoading(false); return; }
     if (!data || data.length === 0) { setSequences([]); setLoading(false); return; }
 
-    const formatted: Sequence[] = data.map((seq: any) => ({
-      ...seq,
-      to_email: Array.isArray(seq.sequence_recipients)
-        ? seq.sequence_recipients.map((r: any) => r.to_email)
-        : [],
-    }));
+const formatted: Sequence[] = data.map((seq: any) => ({
+  ...seq,
+  to_email: Array.isArray(seq.sequence_recipients)
+    ? seq.sequence_recipients.map((r: any) => r.to_email)
+    : [],
+}));
 
     const finalSorted = ["email_asc", "email_desc"].includes(sort)
       ? sortSequencesClientSide(formatted, sort)
@@ -153,16 +153,19 @@ if (!error) {
 
   if (seqError || !created) {
     console.error("Failed to create sequence", seqError);
-    setErrorMsg("Erreur création séquence");
+    setErrorMsg(  "Erreur création séquence");
     return;
   }
 
   // 2️⃣ Ajouter les destinataires un par un dans sequence_recipients
-const recipientInserts = newSequence.to_email.map((email) => ({
-  sequence_id: created.sequence_id,
-  to_email: email,
-  user_id: userId, // 👈 important pour passer les policies
-}));
+const recipientInserts = (Array.isArray(newSequence.to_email) 
+  ? newSequence.to_email 
+  : [newSequence.to_email]
+).filter(email => email?.trim())
+ .map((email) => ({
+   sequence_id: created.sequence_id,
+   to_email: email.trim(),
+ }));
 
   if (recipientInserts.length > 0) {
     const { error: recError } = await supabase
