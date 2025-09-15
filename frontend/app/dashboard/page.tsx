@@ -22,7 +22,7 @@ interface Sequence {
 }
 
 type SequenceRecipient = {
-  to_email: string;
+  to_email: string [] | string;
 };
 
 export default function Dashboard() {
@@ -158,10 +158,11 @@ if (!error) {
   }
 
   // 2️⃣ Ajouter les destinataires un par un dans sequence_recipients
-  const recipientInserts = newSequence.to_email.map((email) => ({
-    sequence_id: created.sequence_id,
-    to_email: email,
-  }));
+const recipientInserts = newSequence.to_email.map((email) => ({
+  sequence_id: created.sequence_id,
+  to_email: email,
+  user_id: userId, // 👈 important pour passer les policies
+}));
 
   if (recipientInserts.length > 0) {
     const { error: recError } = await supabase
