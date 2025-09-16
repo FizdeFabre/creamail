@@ -92,7 +92,7 @@ console.log("testSeq:", testSeq, "err:", testSeqError);
 
         // Récupérer tous les emails envoyés liés aux séquences
         const { data: sendsRaw, error: sendError } = await supabase
-          .from("email_sent")
+          .from("emails_sent")
           .select("sent_at, opened, clicked, responded, variant, sequence_id")
           .in("sequence_id", sequenceIds);
 
