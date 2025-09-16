@@ -55,6 +55,14 @@ export default function DataCenterPage() {
 
         const userId = user.id;
 
+        // On vit dans un monde cruel 
+        const { data: testSeq, error: testSeqError } = await supabase
+  .from("email_sequences")
+  .select("*")
+  .eq("user_id", userId);
+
+console.log("testSeq:", testSeq, "err:", testSeqError);
+
         // Récupérer toutes les séquences de l’utilisateur
         const { data: sequencesRaw, error: seqError } = await supabase
           .from("email_sequences")
@@ -84,7 +92,7 @@ export default function DataCenterPage() {
 
         // Récupérer tous les emails envoyés liés aux séquences
         const { data: sendsRaw, error: sendError } = await supabase
-          .from("emails_sent")
+          .from("email_sent")
           .select("sent_at, opened, clicked, responded, variant, sequence_id")
           .in("sequence_id", sequenceIds);
 
@@ -182,9 +190,9 @@ export default function DataCenterPage() {
           worstCampaign,
           summary,
         });
-      } catch (err) {
-        console.error("Erreur DataCenter:", err);
-      } finally {
+      } catch (err: any) {
+  console.error("Erreur DataCenter:", JSON.stringify(err, null, 2));
+} finally {
         setLoading(false);
       }
     };
