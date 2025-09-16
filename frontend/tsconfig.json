@@ -34,7 +34,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-, "app/api/events/stats/route.ts", "app/api/track/open/[emailId].js", "app/api/track/open/[emailId].png", "app/api/open/route.js"  ],
+, "app/api/events/stats/route.ts", "app/api/track/open/[emailId].js", "app/api/track/open/[emailId].png", "app/api/open/route.ts"  ],
   "exclude": [
     "node_modules"
   ]
