@@ -183,65 +183,66 @@ const recipientInserts = (Array.isArray(newSequence.to_email)
   loadSequences(userId, sortOption);
 };
 
-  const handleDuplicate = async (id: string) => {
-    if (!canCreateSequence) {
-      setErrorMsg("Limit reached for your subscription. Cannot duplicate.");
-      setTimeout(() => setErrorMsg(""), 3000);
+ const handleDuplicate = async (id: string) => {
+  if (!canCreateSequence) {
+    setErrorMsg("Limit reached for your subscription. Cannot duplicate.");
+    setTimeout(() => setErrorMsg(""), 3000);
+    return;
+  }
+
+  // 1️⃣ Récupère la séquence originale avec ses destinataires
+  const { data, error } = await supabase
+    .from("email_sequences")
+    .select("*, sequence_recipients(to_email)")
+    .eq("sequence_id", id)
+    .single();
+
+  if (error || !data) return;
+
+  const { subject, body, recurrence, sequence_recipients } = data;
+  const now = new Date().toISOString();
+
+  // 2️⃣ Crée la nouvelle séquence avec status pending et date actuelle
+  const { data: newSequence, error: insertError } = await supabase
+    .from("email_sequences")
+    .insert({
+      subject: subject + " (copy)",
+      body,
+      recurrence,
+      scheduled_at: now,  // ✅ date actuelle pour que le CRON l'envoie
+      status: 'pending',  // ✅ statut prêt à être traité par le CRON
+      user_id: userId,
+      created_at: now,
+    })
+    .select("sequence_id")
+    .single();
+
+  if (insertError || !newSequence?.sequence_id) {
+    console.error("Failed to create new sequence", insertError);
+    return;
+  }
+
+  // 3️⃣ Crée les destinataires pour cette nouvelle séquence
+  const recipientInserts = (sequence_recipients || []).map((r: SequenceRecipient) => ({
+    sequence_id: newSequence.sequence_id,
+    to_email: r.to_email,
+  }));
+
+  if (recipientInserts.length > 0) {
+    const { error: recipientsError } = await supabase
+      .from("sequence_recipients")
+      .insert(recipientInserts);
+
+    if (recipientsError) {
+      console.error("Recipient error:", recipientsError);
+      setErrorMsg("⚠️ Recipient error: " + recipientsError.message);
       return;
     }
+  }
 
-    // 1️⃣ Récupère la séquence avec ses recipients
-    const { data, error } = await supabase
-      .from("email_sequences")
-      .select("*, sequence_recipients(to_email)")
-      .eq("sequence_id", id)
-      .single();
-
-    if (error || !data) return;
-
-    const { subject, body, recurrence, scheduled_at, sequence_recipients } = data;
-    const isoDate = scheduled_at ? toPostgresTimestamp(scheduled_at) : null;
-
-    // 2️⃣ Crée la nouvelle séquence et récupère bien l'ID
-const { data: newSequence, error: insertError } = await supabase
-  .from("email_sequences")
-  .insert({
-    subject: subject + " (copy)",
-    body,
-    recurrence,
-    scheduled_at: isoDate,
-    user_id: userId,
-    created_at: new Date().toISOString(),
-  })
-  .select("sequence_id")   // 👈 récupérer sequence_id
-  .single();
-
-if (insertError || !newSequence?.sequence_id) {
-  console.error("Failed to create new sequence", insertError);
-  return;
-}
-
-// 👇 Utiliser sequence_id et pas id
-const recipientInserts = (sequence_recipients || []).map((r: SequenceRecipient) => ({
-  sequence_id: newSequence.sequence_id,
-  to_email: r.to_email,
-}));
-
-    if (recipientInserts.length > 0) {
-      const { error: recipientsError } = await supabase
-        .from("sequence_recipients")
-        .insert(recipientInserts);
-
-      if (recipientsError) {
-        console.error("Recipient error:", recipientsError);
-        setErrorMsg("⚠️ Recipient error: " + recipientsError.message);
-        return;
-      }
-    }
-
-    // 4️⃣ Recharge la liste
-    if (userId) loadSequences(userId, sortOption);
-  };
+  // 4️⃣ Recharge la liste des séquences pour l'utilisateur
+  if (userId) loadSequences(userId, sortOption);
+};
 
   const handleEdit = (sequence: Sequence) => {
     setEditData({
