@@ -203,13 +203,13 @@ console.log("testSeq:", testSeq, "err:", testSeqError);
   if (loading)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        Chargement...
+          Loading ...
       </div>
     );
   if (!stats)
     return (
       <div className="min-h-screen flex items-center justify-center">
-        Pas de données disponibles.
+        No data available.
       </div>
     );
 
@@ -220,20 +220,20 @@ console.log("testSeq:", testSeq, "err:", testSeqError);
 
       <div className="grid md:grid-cols-3 gap-6 mb-10">
         <Card>
-          <CardContent>Total envoyés: {stats.totalSent}</CardContent>
+          <CardContent>Total sent: {stats.totalSent}</CardContent>
         </Card>
         <Card>
-          <CardContent>Ouverts: {stats.totalOpened}</CardContent>
+          <CardContent>Total opened: {stats.totalOpened}</CardContent>
         </Card>
         <Card>
           <CardContent>
-            Taux ouverture: {stats.openRate.toFixed(1)}%
+           Total opened (in %): {stats.openRate.toFixed(1)}%
           </CardContent>
         </Card>
       </div>
 
       <h2 className="text-2xl font-semibold text-white mb-4">
-        Activité par jour
+        Daily History
       </h2>
       <Card className="mb-10">
         <CardContent>
@@ -269,10 +269,7 @@ console.log("testSeq:", testSeq, "err:", testSeqError);
               </h3>
               <p className="text-slate-400">Envoyés: {v.totalSent}</p>
               <p className="text-slate-400">
-                Ouverts: {v.totalOpened} ({v.openRate.toFixed(1)}%)
-              </p>
-              <p className="text-slate-400">
-                Réponses: {v.totalResponded} ({v.responseRate.toFixed(1)}%)
+                Opened: {v.totalOpened} ({v.openRate.toFixed(1)}%)
               </p>
             </CardContent>
           </Card>
