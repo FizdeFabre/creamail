@@ -253,28 +253,6 @@ console.log("testSeq:", testSeq, "err:", testSeqError);
           </ResponsiveContainer>
         </CardContent>
       </Card>
-
-      <h2 className="text-2xl font-semibold text-white mb-4">Variants A/B</h2>
-      <div className="grid md:grid-cols-variants gap-4">
-        {stats.variants.map((v) => (
-          <Card
-            key={v.variant}
-            className={`border ${
-              v.isWinner ? "border-green-400" : "border-gray-700"
-            }`}
-          >
-            <CardContent>
-              <h3 className="text-lg font-bold text-white mb-2">
-                {v.variant} {v.isWinner ? "🏆" : ""}
-              </h3>
-              <p className="text-slate-400">Envoyés: {v.totalSent}</p>
-              <p className="text-slate-400">
-                Opened: {v.totalOpened} ({v.openRate.toFixed(1)}%)
-              </p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
     </div>
   );
 }
